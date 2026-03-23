@@ -1,16 +1,18 @@
-from flask import Flask, request, jsonify
 import os
+from flask import Flask, request, jsonify
 import numpy as np
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
 
 app = Flask(__name__)
 
+# Absolute path
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "..", "models", "cardiovision_model_retrained.keras")
+
 # Load model
-MODEL_PATH = "../models/cardiovision_model_retrained.keras"
 model = load_model(MODEL_PATH)
 
-# Class labels
 CLASS_NAMES = ['NORMAL', 'PNEUMONIA']
 
 
@@ -32,8 +34,11 @@ def predict():
         return jsonify({'error': 'No file uploaded'}), 400
 
     file = request.files['file']
-    filepath = os.path.join("temp", file.filename)
-    os.makedirs("temp", exist_ok=True)
+    
+    temp_dir = os.path.join(BASE_DIR, "temp")
+    os.makedirs(temp_dir, exist_ok=True)
+    
+    filepath = os.path.join(temp_dir, file.filename)
     file.save(filepath)
 
     img = preprocess_image(filepath)
