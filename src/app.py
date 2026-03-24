@@ -1,59 +1,49 @@
 import os
-from flask import Flask, request, jsonify
-import numpy as np
+from flask import Flask, request, jsonify, render_template
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
+import numpy as np
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 
-app = Flask(__name__)
-
-# Absolute path
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "..", "models", "cardiovision_model_retrained.keras")
-
-# Load model
-model = load_model(MODEL_PATH)
-
+IMG_SIZE = (224, 224)
 CLASS_NAMES = ['NORMAL', 'PNEUMONIA']
 
+model = load_model(MODEL_PATH)
+print("Model loaded successfully!")
 
-def preprocess_image(img_path):
-    img = image.load_img(img_path, target_size=(150, 150))
-    img_array = image.img_to_array(img) / 255.0
-    img_array = np.expand_dims(img_array, axis=0)
-    return img_array
-
+app = Flask(__name__, template_folder="templates")
 
 @app.route('/')
 def home():
-    return "CardioVision API is running"
-
+    return render_template("index.html")
 
 @app.route('/predict', methods=['POST'])
 def predict():
     if 'file' not in request.files:
-        return jsonify({'error': 'No file uploaded'}), 400
-
+        return jsonify({'error': 'No file provided'}), 400
     file = request.files['file']
-    
-    temp_dir = os.path.join(BASE_DIR, "temp")
-    os.makedirs(temp_dir, exist_ok=True)
-    
-    filepath = os.path.join(temp_dir, file.filename)
-    file.save(filepath)
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
 
-    img = preprocess_image(filepath)
-    prediction = model.predict(img)[0][0]
+    img = image.load_img(file, target_size=IMG_SIZE)
+    img_array = image.img_to_array(img)
+    img_array = np.expand_dims(img_array, axis=0)
+    img_array = preprocess_input(img_array)
 
-    label = CLASS_NAMES[1] if prediction > 0.5 else CLASS_NAMES[0]
-    confidence = float(prediction if prediction > 0.5 else 1 - prediction)
+    prediction_prob = model.predict(img_array)[0][0]
+    if prediction_prob >= 0.5:
+        prediction_class = 'PNEUMONIA'
+    else:
+        prediction_class = 'NORMAL'
 
-    os.remove(filepath)
+    confidence = float(prediction_prob) if prediction_class == 'PNEUMONIA' else 1 - float(prediction_prob)
 
     return jsonify({
-        'prediction': label,
-        'confidence': round(confidence, 4)
+        'prediction': prediction_class,
+        'confidence': f"{confidence:.2f}"
     })
-
 
 if __name__ == '__main__':
     app.run(debug=True)

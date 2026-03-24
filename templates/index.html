@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CardioVision - Pneumonia Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1f4037, #99f2c8);
+            color: #333;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            margin: auto;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        input[type="file"] {
+            margin: 20px 0;
+        }
+
+        button {
+            background: #1f4037;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #14532d;
+        }
+
+        img {
+            margin-top: 20px;
+            max-width: 100%;
+            border-radius: 10px;
+        }
+
+        .result {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .confidence {
+            font-size: 16px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>CardioVision</h1>
+    <p>Pneumonia Detection from Chest X-ray</p>
+
+    <input type="file" id="imageInput" accept="image/*">
+    <br>
+    <button onclick="predict()">Predict</button>
+
+    <img id="preview" src="" alt="" style="display:none;">
+    
+    <div class="result" id="result"></div>
+    <div class="confidence" id="confidence"></div>
+</div>
+
+<script>
+function predict() {
+    const fileInput = document.getElementById('imageInput');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert("Please select an image");
+        return;
+    }
+
+    // Show preview
+    const preview = document.getElementById('preview');
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = "block";
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    fetch("/predict", {
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById("result").innerText = "Prediction: " + data.prediction;
+        document.getElementById("confidence").innerText = "Confidence: " + data.confidence;
+    })
+    .catch(error => {
+        console.error(error);
+        alert("Error occurred");
+    });
+}
+</script>
+
+</body>
+</html>
