@@ -1,0 +1,64 @@
+from io import BytesIO
+
+import numpy as np
+from PIL import Image, UnidentifiedImageError
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
+from tensorflow.keras.models import load_model
+
+
+IMG_SIZE = (224, 224)
+CLASS_NAMES = ["NORMAL", "PNEUMONIA"]
+
+_model = None
+_model_path = None
+
+
+def set_model_path(model_path):
+	global _model, _model_path
+	_model = None
+	_model_path = model_path
+
+
+def get_model(model_path=None):
+	global _model, _model_path
+
+	if model_path and model_path != _model_path:
+		_model = None
+		_model_path = model_path
+
+	if _model is None:
+		if not _model_path:
+			raise ValueError("Model path is not configured.")
+		_model = load_model(_model_path)
+	return _model
+
+
+def preprocess_uploaded_image(file_storage, target_size=IMG_SIZE):
+	file_bytes = file_storage.read()
+	if not file_bytes:
+		raise ValueError("Uploaded file is empty.")
+
+	try:
+		pil_img = Image.open(BytesIO(file_bytes)).convert("RGB")
+	except UnidentifiedImageError as exc:
+		raise ValueError("Uploaded file is not a valid image.") from exc
+
+	pil_img = pil_img.resize(target_size)
+	img_array = np.array(pil_img, dtype=np.float32)
+	img_array = np.expand_dims(img_array, axis=0)
+	return preprocess_input(img_array)
+
+
+def predict_from_uploaded_file(file_storage, model_path=None):
+	model = get_model(model_path)
+	img_tensor = preprocess_uploaded_image(file_storage)
+
+	pred_prob = float(model.predict(img_tensor, verbose=0)[0][0])
+	pred_class = CLASS_NAMES[1] if pred_prob >= 0.5 else CLASS_NAMES[0]
+	confidence = pred_prob if pred_class == CLASS_NAMES[1] else 1.0 - pred_prob
+
+	return {
+		"prediction": pred_class,
+		"confidence": round(confidence, 4),
+		"raw_probability": round(pred_prob, 4),
+	}

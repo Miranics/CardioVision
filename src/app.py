@@ -1,49 +1,210 @@
 import os
-from flask import Flask, request, jsonify, render_template
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing import image
-import numpy as np
-from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
+import threading
+import time
+from datetime import datetime
+
+from flask import Flask, jsonify, render_template, request
+
+from model import retrain_from_uploaded_data
+from prediction import predict_from_uploaded_file, set_model_path
+from preprocessing import CLASS_NAMES, count_images_by_class, save_uploaded_files
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "..", "models", "cardiovision_model_retrained.keras")
-IMG_SIZE = (224, 224)
-CLASS_NAMES = ['NORMAL', 'PNEUMONIA']
+ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
+DATA_DIR = os.path.join(ROOT_DIR, "data")
+TRAIN_DIR = os.path.join(DATA_DIR, "train")
+UPLOADS_DIR = os.path.join(DATA_DIR, "uploads")
+MODELS_DIR = os.path.join(ROOT_DIR, "models")
+MODEL_V1 = os.path.join(MODELS_DIR, "cardiovision_model_v1.keras")
+MODEL_RETRAINED = os.path.join(MODELS_DIR, "cardiovision_model_retrained.keras")
 
-model = load_model(MODEL_PATH)
-print("Model loaded successfully!")
+ACTIVE_MODEL_PATH = MODEL_RETRAINED if os.path.exists(MODEL_RETRAINED) else MODEL_V1
+if not os.path.exists(ACTIVE_MODEL_PATH):
+    raise FileNotFoundError(
+        "No model found. Expected cardiovision_model_v1.keras or cardiovision_model_retrained.keras in models/."
+    )
 
-app = Flask(__name__, template_folder="templates")
+set_model_path(ACTIVE_MODEL_PATH)
 
-@app.route('/')
+app = Flask(
+    __name__,
+    template_folder=os.path.join(ROOT_DIR, "templates"),
+)
+
+METRICS = {
+    "total_predictions": 0,
+    "total_latency_ms": 0.0,
+    "last_prediction_at": None,
+}
+
+RETRAIN_STATUS = {
+    "state": "idle",
+    "started_at": None,
+    "finished_at": None,
+    "message": "No retraining started yet.",
+    "last_result": None,
+}
+
+STATUS_LOCK = threading.Lock()
+APP_START_TIME = time.time()
+
+
+def _update_retrain_status(**kwargs):
+    with STATUS_LOCK:
+        RETRAIN_STATUS.update(kwargs)
+
+
+def _retrain_worker(epochs):
+    _update_retrain_status(
+        state="running",
+        started_at=datetime.utcnow().isoformat(),
+        finished_at=None,
+        message="Retraining in progress.",
+    )
+
+    try:
+        result = retrain_from_uploaded_data(
+            base_data_dir=DATA_DIR,
+            uploads_dir=UPLOADS_DIR,
+            models_dir=MODELS_DIR,
+            epochs=epochs,
+        )
+
+        set_model_path(result["saved_model_path"])
+        _update_retrain_status(
+            state="completed",
+            finished_at=datetime.utcnow().isoformat(),
+            message="Retraining completed successfully.",
+            last_result=result,
+        )
+    except Exception as exc:
+        _update_retrain_status(
+            state="failed",
+            finished_at=datetime.utcnow().isoformat(),
+            message=str(exc),
+        )
+
+
+@app.route("/")
 def home():
     return render_template("index.html")
 
-@app.route('/predict', methods=['POST'])
+
+@app.route("/health", methods=["GET"])
+def health():
+    uptime_seconds = int(time.time() - APP_START_TIME)
+    with STATUS_LOCK:
+        retrain_state = RETRAIN_STATUS["state"]
+
+    return jsonify(
+        {
+            "status": "ok",
+            "uptime_seconds": uptime_seconds,
+            "active_model_path": ACTIVE_MODEL_PATH,
+            "retrain_state": retrain_state,
+        }
+    )
+
+
+@app.route("/metrics", methods=["GET"])
+def metrics():
+    total_predictions = METRICS["total_predictions"]
+    avg_latency = (
+        METRICS["total_latency_ms"] / total_predictions
+        if total_predictions > 0
+        else 0.0
+    )
+    return jsonify(
+        {
+            "total_predictions": total_predictions,
+            "average_latency_ms": round(avg_latency, 2),
+            "last_prediction_at": METRICS["last_prediction_at"],
+        }
+    )
+
+
+@app.route("/visualization-data", methods=["GET"])
+def visualization_data():
+    counts = count_images_by_class(TRAIN_DIR)
+    labels = list(counts.keys())
+    values = [counts[label] for label in labels]
+    return jsonify({"labels": labels, "counts": values})
+
+
+@app.route("/predict", methods=["POST"])
 def predict():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file provided'}), 400
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
+    if "file" not in request.files:
+        return jsonify({"error": "No file provided."}), 400
 
-    img = image.load_img(file, target_size=IMG_SIZE)
-    img_array = image.img_to_array(img)
-    img_array = np.expand_dims(img_array, axis=0)
-    img_array = preprocess_input(img_array)
+    file_obj = request.files["file"]
+    if file_obj.filename == "":
+        return jsonify({"error": "No file selected."}), 400
 
-    prediction_prob = model.predict(img_array)[0][0]
-    if prediction_prob >= 0.5:
-        prediction_class = 'PNEUMONIA'
-    else:
-        prediction_class = 'NORMAL'
+    started = time.perf_counter()
+    try:
+        result = predict_from_uploaded_file(file_obj)
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 400
 
-    confidence = float(prediction_prob) if prediction_class == 'PNEUMONIA' else 1 - float(prediction_prob)
+    latency_ms = (time.perf_counter() - started) * 1000.0
+    METRICS["total_predictions"] += 1
+    METRICS["total_latency_ms"] += latency_ms
+    METRICS["last_prediction_at"] = datetime.utcnow().isoformat()
 
-    return jsonify({
-        'prediction': prediction_class,
-        'confidence': f"{confidence:.2f}"
-    })
+    return jsonify(
+        {
+            "prediction": result["prediction"],
+            "confidence": result["confidence"],
+            "raw_probability": result["raw_probability"],
+            "latency_ms": round(latency_ms, 2),
+        }
+    )
 
-if __name__ == '__main__':
-    app.run(debug=True)
+
+@app.route("/upload-retrain-data", methods=["POST"])
+def upload_retrain_data():
+    class_label = request.form.get("class_label", "").strip().upper()
+    files = request.files.getlist("files")
+
+    if class_label not in CLASS_NAMES:
+        return jsonify({"error": f"class_label must be one of: {CLASS_NAMES}"}), 400
+    if not files:
+        return jsonify({"error": "No files were uploaded."}), 400
+
+    try:
+        saved = save_uploaded_files(files, class_label=class_label, uploads_dir=UPLOADS_DIR)
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    return jsonify(
+        {
+            "message": "Files uploaded successfully.",
+            "class_label": class_label,
+            "saved_count": len(saved),
+        }
+    )
+
+
+@app.route("/trigger-retrain", methods=["POST"])
+def trigger_retrain():
+    payload = request.get_json(silent=True) or {}
+    epochs = int(payload.get("epochs", 3))
+
+    with STATUS_LOCK:
+        if RETRAIN_STATUS["state"] == "running":
+            return jsonify({"error": "Retraining is already running."}), 409
+
+    worker = threading.Thread(target=_retrain_worker, args=(epochs,), daemon=True)
+    worker.start()
+    return jsonify({"message": "Retraining triggered.", "epochs": epochs})
+
+
+@app.route("/retrain-status", methods=["GET"])
+def retrain_status():
+    with STATUS_LOCK:
+        return jsonify(RETRAIN_STATUS)
+
+
+if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=5000)

@@ -2,114 +2,502 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CardioVision - Pneumonia Detection</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CardioVision MLOps Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-a: #f8f3ea;
+            --bg-b: #dce7c8;
+            --card: #fffef8;
+            --ink: #1d2b1f;
+            --muted: #4d5f4f;
+            --accent: #165d3a;
+            --accent-soft: #6a9f53;
+            --danger: #a33939;
+            --ring: rgba(22, 93, 58, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #1f4037, #99f2c8);
-            color: #333;
-            text-align: center;
-            padding: 40px;
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Space Grotesk", sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at 16% 12%, rgba(106, 159, 83, 0.32), transparent 32%),
+                radial-gradient(circle at 82% 18%, rgba(22, 93, 58, 0.28), transparent 35%),
+                linear-gradient(130deg, var(--bg-a), var(--bg-b));
+            padding: 22px;
         }
 
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            max-width: 500px;
-            margin: auto;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        .shell {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            gap: 16px;
+            animation: fadeIn 0.8s ease;
         }
 
-        h1 {
-            margin-bottom: 10px;
+        .hero {
+            background: var(--card);
+            border-radius: 18px;
+            padding: 20px;
+            box-shadow: 0 12px 35px rgba(35, 45, 35, 0.14);
+            border: 1px solid rgba(22, 93, 58, 0.14);
         }
 
-        input[type="file"] {
-            margin: 20px 0;
+        .hero h1 {
+            margin: 0 0 4px;
+            font-size: 32px;
+            letter-spacing: -0.04em;
+        }
+
+        .hero p {
+            margin: 0;
+            color: var(--muted);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        .stat {
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(22, 93, 58, 0.16);
+            border-radius: 14px;
+            padding: 14px;
+            transform: translateY(8px);
+            animation: riseUp 0.7s ease forwards;
+        }
+
+        .stat:nth-child(2) {
+            animation-delay: 0.06s;
+        }
+
+        .stat:nth-child(3) {
+            animation-delay: 0.12s;
+        }
+
+        .stat:nth-child(4) {
+            animation-delay: 0.18s;
+        }
+
+        .label {
+            color: var(--muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .value {
+            margin-top: 5px;
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 18px;
+            padding: 18px;
+            box-shadow: 0 10px 28px rgba(32, 44, 31, 0.14);
+            border: 1px solid rgba(22, 93, 58, 0.13);
+        }
+
+        h2 {
+            margin: 0 0 10px;
+            font-size: 20px;
+        }
+
+        .sub {
+            color: var(--muted);
+            margin-bottom: 14px;
+            font-size: 14px;
+        }
+
+        .row {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        input,
+        select,
+        button {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid rgba(22, 93, 58, 0.25);
+            padding: 10px 12px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        input:focus,
+        select:focus {
+            outline: 3px solid var(--ring);
         }
 
         button {
-            background: #1f4037;
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
+            border: 0;
+            background: linear-gradient(125deg, var(--accent), var(--accent-soft));
+            color: #fff;
+            font-weight: 700;
             cursor: pointer;
-            font-size: 16px;
+            transition: transform 0.16s ease, opacity 0.16s ease;
         }
 
         button:hover {
-            background: #14532d;
+            transform: translateY(-1px);
+            opacity: 0.95;
         }
 
-        img {
-            margin-top: 20px;
-            max-width: 100%;
+        button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .danger {
+            background: linear-gradient(125deg, #8b2e2e, var(--danger));
+        }
+
+        .preview {
+            width: 100%;
             border-radius: 10px;
+            margin-top: 8px;
+            display: none;
+            border: 1px solid rgba(22, 93, 58, 0.2);
         }
 
-        .result {
-            margin-top: 20px;
-            font-size: 20px;
-            font-weight: bold;
+        .prediction {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(106, 159, 83, 0.12);
+            min-height: 66px;
         }
 
-        .confidence {
-            font-size: 16px;
-            color: #555;
+        .bar-list {
+            display: grid;
+            gap: 9px;
+        }
+
+        .bar-item {
+            display: grid;
+            grid-template-columns: 95px 1fr auto;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .bar-track {
+            width: 100%;
+            height: 10px;
+            border-radius: 999px;
+            background: rgba(22, 93, 58, 0.13);
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(120deg, var(--accent), var(--accent-soft));
+            width: 0%;
+            transition: width 0.55s ease;
+        }
+
+        .status-pill {
+            display: inline-block;
+            font-family: "IBM Plex Mono", monospace;
+            padding: 5px 9px;
+            font-size: 12px;
+            border-radius: 999px;
+            background: rgba(22, 93, 58, 0.12);
+            color: var(--accent);
+        }
+
+        .status-failed {
+            background: rgba(163, 57, 57, 0.12);
+            color: var(--danger);
+        }
+
+        .mini {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes riseUp {
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 12px;
+            }
+
+            .hero h1 {
+                font-size: 27px;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="shell">
+        <div class="hero">
+            <h1>CardioVision MLOps</h1>
+            <p>Prediction, uptime, dataset insights, and retraining controls in one panel.</p>
+        </div>
 
-<div class="container">
-    <h1>CardioVision</h1>
-    <p>Pneumonia Detection from Chest X-ray</p>
+        <div class="stats">
+            <div class="stat">
+                <div class="label">API Uptime</div>
+                <div class="value" id="uptime">-</div>
+            </div>
+            <div class="stat">
+                <div class="label">Predictions</div>
+                <div class="value" id="predCount">0</div>
+            </div>
+            <div class="stat">
+                <div class="label">Avg Latency</div>
+                <div class="value" id="avgLatency">0 ms</div>
+            </div>
+            <div class="stat">
+                <div class="label">Retrain State</div>
+                <div class="value" id="retrainState">idle</div>
+            </div>
+        </div>
 
-    <input type="file" id="imageInput" accept="image/*">
-    <br>
-    <button onclick="predict()">Predict</button>
+        <div class="grid">
+            <section class="card">
+                <h2>Single Image Prediction</h2>
+                <div class="sub">Upload one chest X-ray image and run real-time inference.</div>
 
-    <img id="preview" src="" alt="" style="display:none;">
-    
-    <div class="result" id="result"></div>
-    <div class="confidence" id="confidence"></div>
-</div>
+                <div class="row">
+                    <input type="file" id="predictFile" accept="image/*">
+                    <button id="predictBtn">Run Prediction</button>
+                </div>
 
-<script>
-function predict() {
-    const fileInput = document.getElementById('imageInput');
-    const file = fileInput.files[0];
+                <img id="predictPreview" class="preview" alt="Prediction preview">
+                <div class="prediction" id="predictionResult">No prediction yet.</div>
+            </section>
 
-    if (!file) {
-        alert("Please select an image");
-        return;
-    }
+            <section class="card">
+                <h2>Upload Retraining Data</h2>
+                <div class="sub">Bulk upload class-labeled images that will be merged into train data.</div>
 
-    // Show preview
-    const preview = document.getElementById('preview');
-    preview.src = URL.createObjectURL(file);
-    preview.style.display = "block";
+                <div class="row">
+                    <select id="classLabel">
+                        <option value="NORMAL">NORMAL</option>
+                        <option value="PNEUMONIA">PNEUMONIA</option>
+                    </select>
+                    <input type="file" id="retrainFiles" accept="image/*" multiple>
+                    <button id="uploadBtn">Upload for Retrain</button>
+                </div>
+                <div class="mini" id="uploadMessage">No upload yet.</div>
+            </section>
 
-    const formData = new FormData();
-    formData.append("file", file);
+            <section class="card">
+                <h2>Trigger Retraining</h2>
+                <div class="sub">Start a retraining cycle using uploaded data and monitor status.</div>
 
-    fetch("/predict", {
-        method: "POST",
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById("result").innerText = "Prediction: " + data.prediction;
-        document.getElementById("confidence").innerText = "Confidence: " + data.confidence;
-    })
-    .catch(error => {
-        console.error(error);
-        alert("Error occurred");
-    });
-}
-</script>
+                <div class="row">
+                    <input type="number" id="epochsInput" min="1" max="20" value="3">
+                    <button class="danger" id="retrainBtn">Trigger Retraining</button>
+                </div>
 
+                <div>
+                    <span id="statusPill" class="status-pill">idle</span>
+                </div>
+                <div class="mini" id="retrainMessage">No retrain started yet.</div>
+            </section>
+
+            <section class="card">
+                <h2>Dataset Visualizations</h2>
+                <div class="sub">Feature interpretation: class volume, class ratio, and imbalance score.</div>
+                <div class="bar-list" id="bars"></div>
+                <div class="mini" id="datasetMeta">Loading dataset stats...</div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        async function fetchJson(url, options) {
+            const response = await fetch(url, options || {});
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || data.message || "Request failed");
+            }
+            return data;
+        }
+
+        function formatDuration(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            return `${h}h ${m}m ${s}s`;
+        }
+
+        async function refreshTopCards() {
+            try {
+                const [health, metrics, retrainStatus] = await Promise.all([
+                    fetchJson("/health"),
+                    fetchJson("/metrics"),
+                    fetchJson("/retrain-status")
+                ]);
+
+                document.getElementById("uptime").textContent = formatDuration(health.uptime_seconds || 0);
+                document.getElementById("predCount").textContent = metrics.total_predictions || 0;
+                document.getElementById("avgLatency").textContent = `${metrics.average_latency_ms || 0} ms`;
+                document.getElementById("retrainState").textContent = retrainStatus.state || "idle";
+
+                const pill = document.getElementById("statusPill");
+                pill.textContent = retrainStatus.state || "idle";
+                pill.className = "status-pill" + (retrainStatus.state === "failed" ? " status-failed" : "");
+                document.getElementById("retrainMessage").textContent = retrainStatus.message || "No status";
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        async function refreshVisualizations() {
+            try {
+                const data = await fetchJson("/visualization-data");
+                const labels = data.labels || [];
+                const counts = data.counts || [];
+
+                const bars = document.getElementById("bars");
+                bars.innerHTML = "";
+                const max = Math.max(1, ...counts);
+
+                labels.forEach((label, index) => {
+                    const count = counts[index] || 0;
+                    const percentage = Math.round((count / max) * 100);
+
+                    const row = document.createElement("div");
+                    row.className = "bar-item";
+                    row.innerHTML = `
+                        <span>${label}</span>
+                        <div class="bar-track"><div class="bar-fill" style="width:${percentage}%"></div></div>
+                        <strong>${count}</strong>
+                    `;
+                    bars.appendChild(row);
+                });
+
+                const total = counts.reduce((sum, c) => sum + c, 0);
+                const minCount = counts.length ? Math.min(...counts) : 0;
+                const maxCount = counts.length ? Math.max(...counts) : 0;
+                const imbalance = maxCount === 0 ? 0 : (minCount / maxCount).toFixed(2);
+                document.getElementById("datasetMeta").textContent =
+                    `Total images: ${total} | Class ratio score (min/max): ${imbalance} | Classes: ${labels.length}`;
+            } catch (error) {
+                document.getElementById("datasetMeta").textContent = "Could not load dataset stats.";
+            }
+        }
+
+        document.getElementById("predictBtn").addEventListener("click", async () => {
+            const fileInput = document.getElementById("predictFile");
+            const file = fileInput.files[0];
+            const resultBox = document.getElementById("predictionResult");
+
+            if (!file) {
+                resultBox.textContent = "Select an image first.";
+                return;
+            }
+
+            const preview = document.getElementById("predictPreview");
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = "block";
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            try {
+                const data = await fetchJson("/predict", { method: "POST", body: formData });
+                resultBox.innerHTML =
+                    `<strong>Prediction:</strong> ${data.prediction}<br>` +
+                    `<strong>Confidence:</strong> ${data.confidence}<br>` +
+                    `<strong>Latency:</strong> ${data.latency_ms} ms`;
+                refreshTopCards();
+            } catch (error) {
+                resultBox.textContent = error.message;
+            }
+        });
+
+        document.getElementById("uploadBtn").addEventListener("click", async () => {
+            const files = document.getElementById("retrainFiles").files;
+            const classLabel = document.getElementById("classLabel").value;
+            const message = document.getElementById("uploadMessage");
+
+            if (!files.length) {
+                message.textContent = "Select one or more files to upload.";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("class_label", classLabel);
+            for (let i = 0; i < files.length; i += 1) {
+                formData.append("files", files[i]);
+            }
+
+            try {
+                const data = await fetchJson("/upload-retrain-data", { method: "POST", body: formData });
+                message.textContent = `Uploaded ${data.saved_count} files to ${data.class_label}.`;
+                refreshVisualizations();
+            } catch (error) {
+                message.textContent = error.message;
+            }
+        });
+
+        document.getElementById("retrainBtn").addEventListener("click", async () => {
+            const epochs = parseInt(document.getElementById("epochsInput").value, 10) || 3;
+            const button = document.getElementById("retrainBtn");
+
+            button.disabled = true;
+            try {
+                await fetchJson("/trigger-retrain", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ epochs: epochs })
+                });
+                await refreshTopCards();
+            } catch (error) {
+                document.getElementById("retrainMessage").textContent = error.message;
+            } finally {
+                button.disabled = false;
+            }
+        });
+
+        async function poll() {
+            await refreshTopCards();
+            await refreshVisualizations();
+        }
+
+        poll();
+        setInterval(refreshTopCards, 4000);
+    </script>
 </body>
 </html>
