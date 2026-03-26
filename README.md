@@ -113,6 +113,12 @@ Run container:
 docker run --rm -p 5000:5000 cardiovision:latest
 ```
 
+Or with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
 ## Flood Testing with Locust
 
 1. Set a sample image path for prediction traffic.
@@ -125,6 +131,13 @@ export LOCUST_SAMPLE_IMAGE="/absolute/path/to/sample_xray.jpg"
 
 ```bash
 locust -f locustfile.py --host=http://127.0.0.1:5000
+```
+
+Headless run helper:
+
+```bash
+chmod +x scripts/run_locust_headless.sh
+./scripts/run_locust_headless.sh /absolute/path/to/sample_xray.jpg 50 10 3m http://127.0.0.1:5000
 ```
 
 3. Open Locust UI:
@@ -142,6 +155,14 @@ After running the API, execute:
 ```
 
 This verifies `/health`, `/metrics`, `/visualization-data`, and `/data-status`.
+
+Dataset readiness check:
+
+```bash
+"./venv/bin/python" scripts/check_dataset.py
+```
+
+This fails fast when required split/class folders are empty.
 
 ## Notebook
 

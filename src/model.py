@@ -10,10 +10,33 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 
 from preprocessing import (
+	CLASS_NAMES,
 	IMG_SIZE,
 	build_data_generators,
+	dataset_split_status,
 	merge_uploads_into_training_data,
 )
+
+
+def _validate_dataset_for_training(data_dir):
+	status = dataset_split_status(data_dir)
+	missing = []
+
+	for split in ["train", "val", "test"]:
+		split_info = status.get(split, {})
+		if not split_info.get("exists"):
+			missing.append(f"Missing split directory: {split_info.get('path', split)}")
+			continue
+
+		counts = split_info.get("class_counts", {})
+		for class_name in CLASS_NAMES:
+			if counts.get(class_name, 0) <= 0:
+				missing.append(
+					f"{split}/{class_name} has no images. Add at least one image in this class."
+				)
+
+	if missing:
+		raise ValueError("Dataset is not ready for training: " + " | ".join(missing))
 
 
 def build_transfer_model(input_shape=(224, 224, 3), learning_rate=1e-4):
@@ -52,6 +75,7 @@ def evaluate_binary_model(model, test_generator):
 
 
 def train_model(data_dir, model_output_path, epochs=5, learning_rate=1e-4):
+	_validate_dataset_for_training(data_dir)
 	train_gen, val_gen, test_gen = build_data_generators(data_dir, img_size=IMG_SIZE)
 
 	model = build_transfer_model(
