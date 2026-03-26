@@ -7,7 +7,12 @@ from flask import Flask, jsonify, render_template, request
 
 from model import retrain_from_uploaded_data
 from prediction import predict_from_uploaded_file, set_model_path
-from preprocessing import CLASS_NAMES, count_images_by_class, save_uploaded_files
+from preprocessing import (
+    CLASS_NAMES,
+    count_images_by_class,
+    dataset_split_status,
+    save_uploaded_files,
+)
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -56,6 +61,7 @@ def _update_retrain_status(**kwargs):
 
 
 def _retrain_worker(epochs):
+    global ACTIVE_MODEL_PATH
     _update_retrain_status(
         state="running",
         started_at=datetime.utcnow().isoformat(),
@@ -71,6 +77,7 @@ def _retrain_worker(epochs):
             epochs=epochs,
         )
 
+        ACTIVE_MODEL_PATH = result["saved_model_path"]
         set_model_path(result["saved_model_path"])
         _update_retrain_status(
             state="completed",
@@ -127,9 +134,15 @@ def metrics():
 @app.route("/visualization-data", methods=["GET"])
 def visualization_data():
     counts = count_images_by_class(TRAIN_DIR)
-    labels = list(counts.keys())
+    labels = CLASS_NAMES
     values = [counts[label] for label in labels]
     return jsonify({"labels": labels, "counts": values})
+
+
+@app.route("/data-status", methods=["GET"])
+def data_status():
+    status = dataset_split_status(DATA_DIR)
+    return jsonify(status)
 
 
 @app.route("/predict", methods=["POST"])

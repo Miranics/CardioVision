@@ -61,10 +61,10 @@ def build_data_generators(data_dir, img_size=IMG_SIZE, batch_size=BATCH_SIZE):
 
 def count_images_by_class(dataset_split_dir):
 	split_path = Path(dataset_split_dir)
+	counts = {class_name: 0 for class_name in CLASS_NAMES}
 	if not split_path.exists():
-		return {}
+		return counts
 
-	counts = {}
 	for class_dir in split_path.iterdir():
 		if class_dir.is_dir():
 			total = 0
@@ -73,6 +73,18 @@ def count_images_by_class(dataset_split_dir):
 					total += 1
 			counts[class_dir.name] = total
 	return counts
+
+
+def dataset_split_status(data_dir):
+	status = {}
+	for split in ["train", "val", "test"]:
+		split_dir = Path(data_dir) / split
+		status[split] = {
+			"exists": split_dir.exists(),
+			"path": str(split_dir),
+			"class_counts": count_images_by_class(split_dir),
+		}
+	return status
 
 
 def save_uploaded_files(files, class_label, uploads_dir):

@@ -74,6 +74,9 @@ http://127.0.0.1:5000
 - `GET /visualization-data`
 	- Returns class labels and counts from `data/train` for UI visualization.
 
+- `GET /data-status`
+	- Returns dataset split existence and per-class counts for `train`, `val`, and `test`.
+
 - `POST /predict`
 	- Form-data: `file` (single image)
 	- Returns class prediction, confidence, probability, and latency.
@@ -129,6 +132,16 @@ locust -f locustfile.py --host=http://127.0.0.1:5000
 ```text
 http://127.0.0.1:8089
 ```
+
+## Quick Smoke Test
+
+After running the API, execute:
+
+```bash
+./scripts/smoke_test_api.sh
+```
+
+This verifies `/health`, `/metrics`, `/visualization-data`, and `/data-status`.
 
 ## Notebook
 

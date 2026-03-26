@@ -411,8 +411,13 @@
                 const minCount = counts.length ? Math.min(...counts) : 0;
                 const maxCount = counts.length ? Math.max(...counts) : 0;
                 const imbalance = maxCount === 0 ? 0 : (minCount / maxCount).toFixed(2);
-                document.getElementById("datasetMeta").textContent =
-                    `Total images: ${total} | Class ratio score (min/max): ${imbalance} | Classes: ${labels.length}`;
+                if (total === 0) {
+                    document.getElementById("datasetMeta").textContent =
+                        "No training images detected yet. Add class folders and images under data/train or upload retraining data.";
+                } else {
+                    document.getElementById("datasetMeta").textContent =
+                        `Total images: ${total} | Class ratio score (min/max): ${imbalance} | Classes: ${labels.length}`;
+                }
             } catch (error) {
                 document.getElementById("datasetMeta").textContent = "Could not load dataset stats.";
             }
