@@ -2,7 +2,6 @@ from io import BytesIO
 
 import numpy as np
 from PIL import Image, UnidentifiedImageError
-from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.models import load_model
 
 
@@ -46,12 +45,23 @@ def preprocess_uploaded_image(file_storage, target_size=IMG_SIZE):
 	pil_img = pil_img.resize(target_size)
 	img_array = np.array(pil_img, dtype=np.float32)
 	img_array = np.expand_dims(img_array, axis=0)
-	return preprocess_input(img_array)
+	return img_array / 255.0
 
 
 def predict_from_uploaded_file(file_storage, model_path=None):
 	model = get_model(model_path)
-	img_tensor = preprocess_uploaded_image(file_storage)
+
+	target_h = IMG_SIZE[0]
+	target_w = IMG_SIZE[1]
+	if hasattr(model, "input_shape") and model.input_shape is not None:
+		if len(model.input_shape) >= 3:
+			model_h = model.input_shape[1]
+			model_w = model.input_shape[2]
+			if isinstance(model_h, int) and isinstance(model_w, int):
+				target_h = model_h
+				target_w = model_w
+
+	img_tensor = preprocess_uploaded_image(file_storage, target_size=(target_h, target_w))
 
 	pred_prob = float(model.predict(img_tensor, verbose=0)[0][0])
 	pred_class = CLASS_NAMES[1] if pred_prob >= 0.5 else CLASS_NAMES[0]

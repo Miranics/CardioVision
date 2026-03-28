@@ -140,6 +140,8 @@ chmod +x scripts/run_locust_headless.sh
 ./scripts/run_locust_headless.sh /absolute/path/to/sample_xray.jpg 50 10 3m http://127.0.0.1:5000
 ```
 
+You can also omit the sample image argument and the script will auto-pick one from `data/test` or `data/val`.
+
 3. Open Locust UI:
 
 ```text
@@ -163,6 +165,14 @@ Dataset readiness check:
 ```
 
 This fails fast when required split/class folders are empty.
+
+## Training Report Script
+
+Run a repeatable training pass and save metrics to `reports/`:
+
+```bash
+CV_TRAIN_EPOCHS=3 CV_TRAIN_LR=1e-4 "./venv/bin/python" scripts/train_and_report.py
+```
 
 ## Notebook
 

@@ -1,0 +1,15 @@
+{
+  "timestamp_utc": "2026-03-27T00:22:39.743719",
+  "epochs": 3,
+  "learning_rate": 0.0001,
+  "result": {
+    "saved_model_path": "/home/nanen-miracle-mbanaade/ML Code/CardioVision/models/cardiovision_model_run_20260327002152.keras",
+    "epochs_ran": 3,
+    "metrics": {
+      "accuracy": 0.5,
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1_score": 0.6666666666666666
+    }
+  }
+}
