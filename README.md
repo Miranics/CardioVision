@@ -168,8 +168,3 @@ This fails fast when required split/class folders are empty.
 
 The notebook includes model experimentation, preprocessing, and evaluation metrics. This implementation keeps notebook content unchanged and implements deployment/runtime operations in `src/`.
 
-## Next Submission Items to Add
-
-- Public deployment URL.
-- YouTube demo link.
-- Captured Locust result tables/screenshots (latency and response time by load and container count).
