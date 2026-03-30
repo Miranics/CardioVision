@@ -9,4 +9,4 @@ services:
       - key: PYTHONUNBUFFERED
         value: "1"
       - key: CORS_ALLOWED_ORIGINS
-        value: "https://your-vercel-project.vercel.app"
+        value: "*"
