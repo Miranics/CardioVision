@@ -4,6 +4,7 @@ import time
 from datetime import datetime
 
 from flask import Flask, jsonify, render_template, request
+from flask_cors import CORS
 
 from model import retrain_from_uploaded_data
 from prediction import predict_from_uploaded_file, set_model_path
@@ -36,6 +37,13 @@ app = Flask(
     __name__,
     template_folder=os.path.join(ROOT_DIR, "templates"),
 )
+
+cors_allowed_origins = os.getenv("CORS_ALLOWED_ORIGINS", "*").strip()
+if cors_allowed_origins == "*":
+    CORS(app)
+else:
+    allowed = [origin.strip() for origin in cors_allowed_origins.split(",") if origin.strip()]
+    CORS(app, origins=allowed)
 
 METRICS = {
     "total_predictions": 0,

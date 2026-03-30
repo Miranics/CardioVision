@@ -174,6 +174,43 @@ Run a repeatable training pass and save metrics to `reports/`:
 CV_TRAIN_EPOCHS=3 CV_TRAIN_LR=1e-4 "./venv/bin/python" scripts/train_and_report.py
 ```
 
+## Deploy: Render Backend + Vercel Frontend
+
+### 1. Deploy backend to Render (Docker)
+
+This repo includes `render.yaml` configured for Docker runtime and `/health` checks.
+
+On Render:
+
+1. Create a new Web Service from this GitHub repo.
+2. Render will detect `render.yaml` automatically.
+3. After first deploy, copy your backend URL, for example:
+
+```text
+https://cardiovision-api.onrender.com
+```
+
+4. In Render environment variables, set:
+
+```text
+CORS_ALLOWED_ORIGINS=https://your-vercel-project.vercel.app
+```
+
+If you use a custom frontend domain, include it too as comma-separated values.
+
+### 2. Deploy frontend to Vercel
+
+Frontend files are in `frontend/`.
+
+On Vercel:
+
+1. Import this GitHub repo.
+2. Set Root Directory to `frontend`.
+3. Deploy.
+4. Open the Vercel app URL, paste your Render backend URL in the UI, and click **Save Backend URL**.
+
+The frontend stores your backend URL in browser local storage and calls Render API endpoints directly.
+
 ## Notebook
 
 The notebook includes model experimentation, preprocessing, and evaluation metrics. This implementation keeps notebook content unchanged and implements deployment/runtime operations in `src/`.

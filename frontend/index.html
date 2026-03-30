@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CardioVision</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-a: #f8f3ea;
+      --bg-b: #dce7c8;
+      --card: #fffef8;
+      --ink: #1d2b1f;
+      --muted: #4d5f4f;
+      --accent: #165d3a;
+      --accent-soft: #6a9f53;
+      --danger: #a33939;
+      --ring: rgba(22, 93, 58, 0.2);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Space Grotesk", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 16% 12%, rgba(106, 159, 83, 0.32), transparent 32%),
+        radial-gradient(circle at 82% 18%, rgba(22, 93, 58, 0.28), transparent 35%),
+        linear-gradient(130deg, var(--bg-a), var(--bg-b));
+      padding: 22px;
+    }
+
+    .shell { max-width: 980px; margin: 0 auto; display: grid; gap: 16px; }
+    .card { background: var(--card); border-radius: 16px; padding: 18px; border: 1px solid rgba(22, 93, 58, 0.13); box-shadow: 0 10px 28px rgba(32, 44, 31, 0.14); }
+    .hero h1 { margin: 0 0 4px; font-size: 32px; letter-spacing: -0.03em; }
+    .hero p { margin: 0; color: var(--muted); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+    .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.09em; }
+    .value { margin-top: 5px; font-family: "IBM Plex Mono", monospace; font-size: 22px; }
+
+    input, button {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid rgba(22, 93, 58, 0.25);
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    input:focus { outline: 3px solid var(--ring); }
+    button {
+      border: 0;
+      background: linear-gradient(125deg, var(--accent), var(--accent-soft));
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .prediction {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      background: rgba(106, 159, 83, 0.12);
+      min-height: 66px;
+    }
+
+    .mini { color: var(--muted); font-size: 13px; }
+    .error { color: var(--danger); }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="card hero">
+      <h1>CardioVision</h1>
+      <p>Vercel frontend connected to your Render Docker backend.</p>
+      <p class="mini">Set your backend URL below once and it will be saved in your browser.</p>
+    </section>
+
+    <section class="card">
+      <label class="label" for="apiBase">Render Backend URL</label>
+      <input id="apiBase" type="url" placeholder="https://your-render-service.onrender.com">
+      <button id="saveBase">Save Backend URL</button>
+      <div id="saveMessage" class="mini"></div>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <div class="label">Health</div>
+        <div class="value" id="healthValue">Checking...</div>
+        <div class="mini" id="healthMeta"></div>
+      </article>
+
+      <article class="card">
+        <div class="label">Prediction</div>
+        <input type="file" id="predictFile" accept="image/*">
+        <button id="predictBtn">Run Prediction</button>
+        <div class="prediction" id="predictionResult">No prediction yet.</div>
+      </article>
+    </section>
+  </div>
+
+  <script>
+    const storageKey = "cardiovision_api_base";
+
+    function getBase() {
+      return (localStorage.getItem(storageKey) || "").replace(/\/$/, "");
+    }
+
+    function setBase(value) {
+      localStorage.setItem(storageKey, value.replace(/\/$/, ""));
+    }
+
+    function apiUrl(path) {
+      const base = getBase();
+      if (!base) {
+        throw new Error("Set your Render backend URL first.");
+      }
+      return `${base}${path}`;
+    }
+
+    async function fetchJson(path, options) {
+      const response = await fetch(apiUrl(path), options || {});
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || data.message || "Request failed");
+      }
+      return data;
+    }
+
+    async function refreshHealth() {
+      const value = document.getElementById("healthValue");
+      const meta = document.getElementById("healthMeta");
+      try {
+        const data = await fetchJson("/health");
+        value.textContent = data.status || "ok";
+        meta.textContent = `Model: ${data.active_model_path || "n/a"}`;
+        meta.className = "mini";
+      } catch (error) {
+        value.textContent = "Unavailable";
+        meta.textContent = error.message;
+        meta.className = "mini error";
+      }
+    }
+
+    document.getElementById("saveBase").addEventListener("click", () => {
+      const input = document.getElementById("apiBase");
+      const message = document.getElementById("saveMessage");
+      const url = (input.value || "").trim();
+      if (!url.startsWith("https://")) {
+        message.textContent = "Please enter a valid https URL.";
+        message.className = "mini error";
+        return;
+      }
+      setBase(url);
+      message.textContent = "Saved. Testing backend...";
+      message.className = "mini";
+      refreshHealth();
+    });
+
+    document.getElementById("predictBtn").addEventListener("click", async () => {
+      const file = document.getElementById("predictFile").files[0];
+      const result = document.getElementById("predictionResult");
+
+      if (!file) {
+        result.textContent = "Select an image first.";
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const data = await fetchJson("/predict", { method: "POST", body: formData });
+        result.innerHTML =
+          `<strong>Prediction:</strong> ${data.prediction}<br>` +
+          `<strong>Confidence:</strong> ${data.confidence}<br>` +
+          `<strong>Latency:</strong> ${data.latency_ms} ms`;
+        refreshHealth();
+      } catch (error) {
+        result.textContent = error.message;
+      }
+    });
+
+    const initialBase = getBase();
+    if (initialBase) {
+      document.getElementById("apiBase").value = initialBase;
+      refreshHealth();
+    } else {
+      document.getElementById("healthValue").textContent = "Set backend URL";
+      document.getElementById("healthMeta").textContent = "Add your Render URL and click Save Backend URL.";
+    }
+  </script>
+</body>
+</html>
