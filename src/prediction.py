@@ -2,7 +2,6 @@ from io import BytesIO
 
 import numpy as np
 from PIL import Image, UnidentifiedImageError
-from tensorflow.keras.models import load_model
 
 
 IMG_SIZE = (224, 224)
@@ -28,6 +27,8 @@ def get_model(model_path=None):
 	if _model is None:
 		if not _model_path:
 			raise ValueError("Model path is not configured.")
+		from tensorflow.keras.models import load_model
+
 		_model = load_model(_model_path)
 	return _model
 

@@ -3,8 +3,6 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-
 
 IMG_SIZE = (224, 224)
 BATCH_SIZE = 32
@@ -17,6 +15,8 @@ def ensure_directory(path):
 
 
 def build_data_generators(data_dir, img_size=IMG_SIZE, batch_size=BATCH_SIZE):
+	from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
 	train_dir = os.path.join(data_dir, "train")
 	val_dir = os.path.join(data_dir, "val")
 	test_dir = os.path.join(data_dir, "test")

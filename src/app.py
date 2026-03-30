@@ -6,7 +6,6 @@ from datetime import datetime
 from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
 
-from model import retrain_from_uploaded_data
 from prediction import predict_from_uploaded_file, set_model_path
 from preprocessing import (
     CLASS_NAMES,
@@ -70,6 +69,8 @@ def _update_retrain_status(**kwargs):
 
 def _retrain_worker(epochs):
     global ACTIVE_MODEL_PATH
+    from model import retrain_from_uploaded_data
+
     _update_retrain_status(
         state="running",
         started_at=datetime.utcnow().isoformat(),
