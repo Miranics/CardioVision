@@ -9,17 +9,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --ink: #0f2334;
-      --muted: #4f6678;
-      --primary: #006d77;
-      --primary-soft: #5fb3bb;
-      --danger: #b4232d;
-      --ok: #11795e;
-      --surface: #f6fbfd;
+      --ink: #261419;
+      --muted: #64525a;
+      --primary: #a2152d;
+      --primary-soft: #d32f49;
+      --danger: #7f1322;
+      --ok: #0b7a5a;
+      --surface: #fff4f5;
       --card: #ffffff;
-      --ring: rgba(0, 109, 119, 0.24);
-      --stroke: rgba(15, 35, 52, 0.12);
-      --shadow: 0 14px 34px rgba(11, 34, 49, 0.12);
+      --ring: rgba(162, 21, 45, 0.22);
+      --stroke: rgba(58, 12, 22, 0.14);
+      --shadow: 0 14px 34px rgba(40, 10, 16, 0.16);
     }
 
     * {
@@ -32,9 +32,9 @@
       font-family: "Manrope", sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(circle at 14% 14%, rgba(95, 179, 187, 0.28), transparent 28%),
-        radial-gradient(circle at 86% 20%, rgba(0, 109, 119, 0.24), transparent 30%),
-        linear-gradient(140deg, #eaf8fb 0%, #f4fcff 42%, #eef6ff 100%);
+        radial-gradient(circle at 12% 12%, rgba(211, 47, 73, 0.2), transparent 28%),
+        radial-gradient(circle at 88% 20%, rgba(15, 22, 34, 0.2), transparent 30%),
+        linear-gradient(140deg, #fff3f5 0%, #fff7f8 42%, #f9ecef 100%);
       padding: 24px;
     }
 
@@ -50,9 +50,15 @@
       overflow: hidden;
       border-radius: 24px;
       padding: 26px;
-      background: linear-gradient(125deg, #0f6d77 0%, #0c445f 60%, #0a2f4a 100%);
+      background:
+        linear-gradient(98deg, rgba(10, 8, 10, 0.84) 0%, rgba(10, 8, 10, 0.22) 62%),
+        url("assets/heart-banner.jpg") left center / cover no-repeat;
       color: #ecf8ff;
       box-shadow: var(--shadow);
+      min-height: 300px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
     }
 
     .hero::after {
@@ -63,7 +69,7 @@
       width: 260px;
       height: 260px;
       border-radius: 50%;
-      background: radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.44), rgba(255, 255, 255, 0.04));
+      background: radial-gradient(circle at 40% 40%, rgba(233, 51, 78, 0.33), rgba(255, 255, 255, 0));
     }
 
     .hero-title {
@@ -78,7 +84,7 @@
     .hero-sub {
       margin: 12px 0 0;
       max-width: 740px;
-      color: rgba(236, 248, 255, 0.9);
+      color: rgba(250, 245, 246, 0.94);
       position: relative;
       z-index: 1;
     }
@@ -90,7 +96,8 @@
       align-items: center;
       padding: 8px 11px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(162, 21, 45, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.18);
       font-family: "IBM Plex Mono", monospace;
       font-size: 12px;
       position: relative;
@@ -256,14 +263,14 @@
       width: 100%;
       height: 12px;
       border-radius: 999px;
-      background: rgba(12, 68, 95, 0.14);
+      background: rgba(162, 21, 45, 0.12);
       overflow: hidden;
     }
 
     .bar-fill {
       height: 100%;
       width: 0%;
-      background: linear-gradient(120deg, #0c607d, #5fb3bb);
+      background: linear-gradient(120deg, #891428, #d32f49);
       transition: width 0.5s ease;
     }
 
@@ -302,7 +309,7 @@
   <main class="app">
     <section class="hero">
       <h1 class="hero-title">CardioVision Clinical Intelligence</h1>
-      <p class="hero-sub">A medical-grade one-page interface for X-ray screening, retraining intake, and model monitoring. Backend is connected for all users by default.</p>
+      <p class="hero-sub">A medical-grade one-page interface for X-ray screening, retraining intake, and model monitoring. The backend is already connected for everyone by default.</p>
       <div class="hero-meta">Live API: cardiovision-api-2lza.onrender.com</div>
     </section>
 
@@ -361,9 +368,9 @@
 
         <article class="card">
           <h2>Dataset Distribution</h2>
-          <p class="sub">Training volume by class and class balance indicator.</p>
+          <p class="sub">Class distribution view for quick monitoring.</p>
           <div id="bars" class="bars"></div>
-          <div id="datasetMeta" class="small">Loading dataset metrics...</div>
+          <div id="datasetMeta" class="small">Loading class overview...</div>
         </article>
       </div>
     </section>
@@ -437,11 +444,7 @@
           bars.appendChild(row);
         });
 
-        const total = counts.reduce((sum, c) => sum + c, 0);
-        const minCount = counts.length ? Math.min(...counts) : 0;
-        const maxCount = counts.length ? Math.max(...counts) : 0;
-        const ratio = maxCount === 0 ? "0.00" : (minCount / maxCount).toFixed(2);
-        document.getElementById("datasetMeta").textContent = `Total images: ${total} | Balance score (min/max): ${ratio}`;
+        document.getElementById("datasetMeta").textContent = "Class bars refreshed successfully.";
       } catch (error) {
         document.getElementById("datasetMeta").textContent = "Dataset metrics unavailable right now.";
       }
@@ -491,7 +494,7 @@
 
       try {
         const data = await fetchJson("/upload-retrain-data", { method: "POST", body: formData });
-        message.textContent = `Uploaded ${data.saved_count} files to ${data.class_label}.`;
+        message.textContent = `Upload complete for class ${data.class_label}.`;
         refreshDataset();
       } catch (error) {
         message.textContent = error.message;
