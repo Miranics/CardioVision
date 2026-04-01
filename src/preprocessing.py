@@ -1,3 +1,5 @@
+"""Dataset utilities for generation, status checks, and retraining uploads."""
+
 import os
 import shutil
 from datetime import datetime
@@ -11,10 +13,12 @@ ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".webp"}
 
 
 def ensure_directory(path):
+	"""Create a directory path if it does not exist."""
 	Path(path).mkdir(parents=True, exist_ok=True)
 
 
 def build_data_generators(data_dir, img_size=IMG_SIZE, batch_size=BATCH_SIZE):
+	"""Create train/val/test image generators with augmentation for training."""
 	from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 	train_dir = os.path.join(data_dir, "train")
@@ -60,6 +64,7 @@ def build_data_generators(data_dir, img_size=IMG_SIZE, batch_size=BATCH_SIZE):
 
 
 def count_images_by_class(dataset_split_dir):
+	"""Count image files per class for a single dataset split."""
 	split_path = Path(dataset_split_dir)
 	counts = {class_name: 0 for class_name in CLASS_NAMES}
 	if not split_path.exists():
@@ -76,6 +81,7 @@ def count_images_by_class(dataset_split_dir):
 
 
 def dataset_split_status(data_dir):
+	"""Return split existence and class counts for train, val, and test."""
 	status = {}
 	for split in ["train", "val", "test"]:
 		split_dir = Path(data_dir) / split
@@ -88,6 +94,7 @@ def dataset_split_status(data_dir):
 
 
 def save_uploaded_files(files, class_label, uploads_dir):
+	"""Save uploaded files into class-specific retraining intake folder."""
 	normalized_label = class_label.strip().upper()
 	if normalized_label not in CLASS_NAMES:
 		raise ValueError(f"Invalid class label: {class_label}")
@@ -114,6 +121,7 @@ def save_uploaded_files(files, class_label, uploads_dir):
 
 
 def merge_uploads_into_training_data(uploads_dir, train_dir):
+	"""Copy uploaded retrain files into train split with unique names."""
 	uploads_path = Path(uploads_dir)
 	train_path = Path(train_dir)
 	ensure_directory(train_path)

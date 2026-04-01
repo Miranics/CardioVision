@@ -1,3 +1,5 @@
+"""Flask API service for CardioVision prediction, monitoring, and retraining."""
+
 import os
 import json
 import threading
@@ -65,11 +67,13 @@ APP_START_TIME = time.time()
 
 
 def _update_retrain_status(**kwargs):
+    """Update shared retraining status atomically."""
     with STATUS_LOCK:
         RETRAIN_STATUS.update(kwargs)
 
 
 def _write_retrain_report(result, epochs):
+    """Persist a JSON report for each UI-triggered retraining run."""
     os.makedirs(REPORTS_DIR, exist_ok=True)
     timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
     report_path = os.path.join(REPORTS_DIR, f"retraining_report_{timestamp}.json")
@@ -88,6 +92,7 @@ def _write_retrain_report(result, epochs):
 
 
 def _retrain_worker(epochs):
+    """Run retraining asynchronously and update active model when successful."""
     global ACTIVE_MODEL_PATH
     from model import retrain_from_uploaded_data
 
@@ -127,11 +132,13 @@ def _retrain_worker(epochs):
 
 @app.route("/")
 def home():
+    """Render the local HTML interface."""
     return render_template("index.html")
 
 
 @app.route("/health", methods=["GET"])
 def health():
+    """Return service health, uptime, and active model metadata."""
     uptime_seconds = int(time.time() - APP_START_TIME)
     with STATUS_LOCK:
         retrain_state = RETRAIN_STATUS["state"]
@@ -148,6 +155,7 @@ def health():
 
 @app.route("/metrics", methods=["GET"])
 def metrics():
+    """Expose runtime inference metrics for monitoring."""
     total_predictions = METRICS["total_predictions"]
     avg_latency = (
         METRICS["total_latency_ms"] / total_predictions
@@ -165,6 +173,7 @@ def metrics():
 
 @app.route("/visualization-data", methods=["GET"])
 def visualization_data():
+    """Return train split class counts for UI visualizations."""
     counts = count_images_by_class(TRAIN_DIR)
     labels = CLASS_NAMES
     values = [counts[label] for label in labels]
@@ -173,12 +182,14 @@ def visualization_data():
 
 @app.route("/data-status", methods=["GET"])
 def data_status():
+    """Return dataset split readiness details across train/val/test."""
     status = dataset_split_status(DATA_DIR)
     return jsonify(status)
 
 
 @app.route("/predict", methods=["POST"])
 def predict():
+    """Predict one uploaded image and record latency metrics."""
     if "file" not in request.files:
         return jsonify({"error": "No file provided."}), 400
 
@@ -209,6 +220,7 @@ def predict():
 
 @app.route("/upload-retrain-data", methods=["POST"])
 def upload_retrain_data():
+    """Store bulk user uploads for later retraining."""
     class_label = request.form.get("class_label", "").strip().upper()
     files = request.files.getlist("files")
 
@@ -233,6 +245,7 @@ def upload_retrain_data():
 
 @app.route("/trigger-retrain", methods=["POST"])
 def trigger_retrain():
+    """Start background retraining with provided epochs."""
     payload = request.get_json(silent=True) or {}
     epochs = int(payload.get("epochs", 3))
 
@@ -247,6 +260,7 @@ def trigger_retrain():
 
 @app.route("/retrain-status", methods=["GET"])
 def retrain_status():
+    """Return the latest retraining state and result payload."""
     with STATUS_LOCK:
         return jsonify(RETRAIN_STATUS)
 

@@ -198,6 +198,22 @@ chmod +x scripts/run_locust_headless.sh
 ./scripts/run_locust_headless.sh /absolute/path/to/sample_xray.jpg 50 10 3m http://127.0.0.1:5000
 ```
 
+## Flood Testing Results (Fill Before Submission)
+
+Record your measured results from Locust runs here to satisfy rubric evidence requirements.
+
+| Containers | Users | Spawn Rate | Duration | Avg Response (ms) | P95 (ms) | Failure Rate (%) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 50 | 10/s | 3m | TODO | TODO | TODO |
+| 2 | 50 | 10/s | 3m | TODO | TODO | TODO |
+| 3 | 50 | 10/s | 3m | TODO | TODO | TODO |
+
+Interpretation notes:
+
+1. Describe how latency changed when container count increased.
+2. Mention whether failure rate improved or worsened.
+3. State your recommended production container baseline.
+
 ## Utility Scripts
 
 1. Smoke test API:

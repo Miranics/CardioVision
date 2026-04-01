@@ -1,3 +1,5 @@
+"""Model training and retraining utilities for CardioVision."""
+
 import os
 from datetime import datetime
 
@@ -19,6 +21,7 @@ from preprocessing import (
 
 
 def _validate_dataset_for_training(data_dir):
+	"""Ensure required splits and classes exist before fitting a model."""
 	status = dataset_split_status(data_dir)
 	missing = []
 
@@ -40,6 +43,7 @@ def _validate_dataset_for_training(data_dir):
 
 
 def build_transfer_model(input_shape=(224, 224, 3), learning_rate=1e-4):
+	"""Build a MobileNetV2 transfer-learning classifier."""
 	base_model = MobileNetV2(
 		include_top=False,
 		weights="imagenet",
@@ -61,6 +65,7 @@ def build_transfer_model(input_shape=(224, 224, 3), learning_rate=1e-4):
 
 
 def evaluate_binary_model(model, test_generator):
+	"""Evaluate trained model using accuracy, precision, recall, and F1."""
 	predictions = model.predict(test_generator, verbose=0)
 	y_probs = predictions.reshape(-1)
 	y_pred = (y_probs >= 0.5).astype(int)
@@ -75,6 +80,7 @@ def evaluate_binary_model(model, test_generator):
 
 
 def train_model(data_dir, model_output_path, epochs=5, learning_rate=1e-4):
+	"""Train, evaluate, and save a classification model."""
 	_validate_dataset_for_training(data_dir)
 	train_gen, val_gen, test_gen = build_data_generators(data_dir, img_size=IMG_SIZE)
 
@@ -113,6 +119,7 @@ def retrain_from_uploaded_data(
 	epochs=3,
 	learning_rate=1e-4,
 ):
+	"""Merge uploaded files into train set, retrain model, and return run summary."""
 	train_dir = os.path.join(base_data_dir, "train")
 	copied_files = merge_uploads_into_training_data(uploads_dir, train_dir)
 	if copied_files == 0:

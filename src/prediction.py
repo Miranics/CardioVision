@@ -1,3 +1,5 @@
+"""Inference helpers for loading model and predicting from uploaded images."""
+
 from io import BytesIO
 
 import numpy as np
@@ -12,12 +14,14 @@ _model_path = None
 
 
 def set_model_path(model_path):
+	"""Set active model path and clear cached model instance."""
 	global _model, _model_path
 	_model = None
 	_model_path = model_path
 
 
 def get_model(model_path=None):
+	"""Return loaded model, reloading only when path changes."""
 	global _model, _model_path
 
 	if model_path and model_path != _model_path:
@@ -34,6 +38,7 @@ def get_model(model_path=None):
 
 
 def preprocess_uploaded_image(file_storage, target_size=IMG_SIZE):
+	"""Decode and normalize one uploaded image for model inference."""
 	file_bytes = file_storage.read()
 	if not file_bytes:
 		raise ValueError("Uploaded file is empty.")
@@ -50,6 +55,7 @@ def preprocess_uploaded_image(file_storage, target_size=IMG_SIZE):
 
 
 def predict_from_uploaded_file(file_storage, model_path=None):
+	"""Predict class and confidence for one uploaded image file."""
 	model = get_model(model_path)
 
 	target_h = IMG_SIZE[0]

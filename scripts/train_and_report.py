@@ -1,3 +1,5 @@
+"""Run a reproducible training pass and write a JSON report artifact."""
+
 import json
 import os
 import sys
@@ -13,6 +15,7 @@ from model import train_model  # noqa: E402
 
 
 def main():
+    """Train model using env-configured settings and save report to reports/."""
     epochs = int(os.getenv("CV_TRAIN_EPOCHS", "3"))
     learning_rate = float(os.getenv("CV_TRAIN_LR", "1e-4"))
 
