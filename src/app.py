@@ -1,4 +1,5 @@
 import os
+import json
 import threading
 import time
 from datetime import datetime
@@ -21,6 +22,7 @@ DATA_DIR = os.path.join(ROOT_DIR, "data")
 TRAIN_DIR = os.path.join(DATA_DIR, "train")
 UPLOADS_DIR = os.path.join(DATA_DIR, "uploads")
 MODELS_DIR = os.path.join(ROOT_DIR, "models")
+REPORTS_DIR = os.path.join(ROOT_DIR, "reports")
 MODEL_V1 = os.path.join(MODELS_DIR, "cardiovision_model_v1.keras")
 MODEL_RETRAINED = os.path.join(MODELS_DIR, "cardiovision_model_retrained.keras")
 
@@ -67,6 +69,24 @@ def _update_retrain_status(**kwargs):
         RETRAIN_STATUS.update(kwargs)
 
 
+def _write_retrain_report(result, epochs):
+    os.makedirs(REPORTS_DIR, exist_ok=True)
+    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    report_path = os.path.join(REPORTS_DIR, f"retraining_report_{timestamp}.json")
+
+    payload = {
+        "timestamp_utc": datetime.utcnow().isoformat(),
+        "trigger": "ui_retrain",
+        "epochs": epochs,
+        "result": result,
+    }
+
+    with open(report_path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2)
+
+    return report_path
+
+
 def _retrain_worker(epochs):
     global ACTIVE_MODEL_PATH
     from model import retrain_from_uploaded_data
@@ -85,6 +105,9 @@ def _retrain_worker(epochs):
             models_dir=MODELS_DIR,
             epochs=epochs,
         )
+
+        report_path = _write_retrain_report(result=result, epochs=epochs)
+        result["report_path"] = report_path
 
         ACTIVE_MODEL_PATH = result["saved_model_path"]
         set_model_path(result["saved_model_path"])
