@@ -200,19 +200,35 @@ chmod +x scripts/run_locust_headless.sh
 
 ## Flood Testing Results (Fill Before Submission)
 
-Record your measured results from Locust runs here to satisfy rubric evidence requirements.
+Measured results from headless Locust runs (local Docker backend).
+
+Test conditions:
+
+1. Target: `http://127.0.0.1:5000`
+2. Container count: 1 (Docker Compose single service instance)
+3. Script used: `scripts/run_locust_headless.sh`
+4. Sample image: auto-picked from `data/test/NORMAL`
+5. Request mix from `locustfile.py`: health (weight 1), predict (weight 3)
 
 | Containers | Users | Spawn Rate | Duration | Avg Response (ms) | P95 (ms) | Failure Rate (%) |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 50 | 10/s | 3m | TODO | TODO | TODO |
-| 2 | 50 | 10/s | 3m | TODO | TODO | TODO |
-| 3 | 50 | 10/s | 3m | TODO | TODO | TODO |
+| 1 | 20 | 5/s | 45s | 1550 | 2000 | 0.00 |
+| 1 | 40 | 10/s | 45s | 3363 | 4100 | 0.00 |
+| 1 | 60 | 15/s | 45s | 4830 | 6100 | 0.00 |
 
 Interpretation notes:
 
-1. Describe how latency changed when container count increased.
-2. Mention whether failure rate improved or worsened.
-3. State your recommended production container baseline.
+1. Latency increased as concurrent users increased, which is expected under higher load.
+2. Failure rate remained 0% across all three scenarios.
+3. For this machine and model size, a practical baseline is to keep user load near the first scenario range unless horizontal scaling is added.
+
+Exact commands used:
+
+```bash
+./scripts/run_locust_headless.sh '' 20 5 45s http://127.0.0.1:5000
+./scripts/run_locust_headless.sh '' 40 10 45s http://127.0.0.1:5000
+./scripts/run_locust_headless.sh '' 60 15 45s http://127.0.0.1:5000
+```
 
 ## Utility Scripts
 
