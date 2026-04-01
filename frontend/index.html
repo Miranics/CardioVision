@@ -3,124 +3,384 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CardioVision</title>
+  <title>CardioVision Clinical Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-a: #f8f3ea;
-      --bg-b: #dce7c8;
-      --card: #fffef8;
-      --ink: #1d2b1f;
-      --muted: #4d5f4f;
-      --accent: #165d3a;
-      --accent-soft: #6a9f53;
-      --danger: #a33939;
-      --ring: rgba(22, 93, 58, 0.2);
+      --ink: #0f2334;
+      --muted: #4f6678;
+      --primary: #006d77;
+      --primary-soft: #5fb3bb;
+      --danger: #b4232d;
+      --ok: #11795e;
+      --surface: #f6fbfd;
+      --card: #ffffff;
+      --ring: rgba(0, 109, 119, 0.24);
+      --stroke: rgba(15, 35, 52, 0.12);
+      --shadow: 0 14px 34px rgba(11, 34, 49, 0.12);
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: "Space Grotesk", sans-serif;
+      font-family: "Manrope", sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(circle at 16% 12%, rgba(106, 159, 83, 0.32), transparent 32%),
-        radial-gradient(circle at 82% 18%, rgba(22, 93, 58, 0.28), transparent 35%),
-        linear-gradient(130deg, var(--bg-a), var(--bg-b));
-      padding: 22px;
+        radial-gradient(circle at 14% 14%, rgba(95, 179, 187, 0.28), transparent 28%),
+        radial-gradient(circle at 86% 20%, rgba(0, 109, 119, 0.24), transparent 30%),
+        linear-gradient(140deg, #eaf8fb 0%, #f4fcff 42%, #eef6ff 100%);
+      padding: 24px;
     }
 
-    .shell { max-width: 980px; margin: 0 auto; display: grid; gap: 16px; }
-    .card { background: var(--card); border-radius: 16px; padding: 18px; border: 1px solid rgba(22, 93, 58, 0.13); box-shadow: 0 10px 28px rgba(32, 44, 31, 0.14); }
-    .hero h1 { margin: 0 0 4px; font-size: 32px; letter-spacing: -0.03em; }
-    .hero p { margin: 0; color: var(--muted); }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
-    .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.09em; }
-    .value { margin-top: 5px; font-family: "IBM Plex Mono", monospace; font-size: 22px; }
+    .app {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: grid;
+      gap: 18px;
+    }
 
-    input, button {
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border-radius: 24px;
+      padding: 26px;
+      background: linear-gradient(125deg, #0f6d77 0%, #0c445f 60%, #0a2f4a 100%);
+      color: #ecf8ff;
+      box-shadow: var(--shadow);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -70px;
+      top: -70px;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.44), rgba(255, 255, 255, 0.04));
+    }
+
+    .hero-title {
+      margin: 0;
+      font-size: clamp(30px, 5vw, 52px);
+      line-height: 1.02;
+      letter-spacing: -0.03em;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-sub {
+      margin: 12px 0 0;
+      max-width: 740px;
+      color: rgba(236, 248, 255, 0.9);
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-meta {
+      margin-top: 16px;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .overview {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 8px 20px rgba(14, 40, 61, 0.08);
+    }
+
+    .metric-label {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      margin-top: 4px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 22px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 16px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 10px 26px rgba(12, 36, 55, 0.08);
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: -0.02em;
+    }
+
+    .sub {
+      margin: 6px 0 14px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    input,
+    select,
+    button {
       width: 100%;
-      border-radius: 10px;
-      border: 1px solid rgba(22, 93, 58, 0.25);
-      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(15, 35, 52, 0.18);
+      padding: 11px 13px;
       font-family: inherit;
       font-size: 14px;
       margin-bottom: 10px;
+      background: #fff;
     }
 
-    input:focus { outline: 3px solid var(--ring); }
+    input:focus,
+    select:focus {
+      outline: 3px solid var(--ring);
+    }
+
     button {
       border: 0;
-      background: linear-gradient(125deg, var(--accent), var(--accent-soft));
-      color: #fff;
       font-weight: 700;
       cursor: pointer;
+      color: #fff;
+      background: linear-gradient(125deg, var(--primary), #0c607d);
+      transition: transform 0.16s ease, opacity 0.16s ease;
     }
 
-    .prediction {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 10px;
-      background: rgba(106, 159, 83, 0.12);
-      min-height: 66px;
+    button:hover {
+      transform: translateY(-1px);
+      opacity: 0.95;
     }
 
-    .mini { color: var(--muted); font-size: 13px; }
-    .error { color: var(--danger); }
+    button:disabled {
+      opacity: 0.65;
+      transform: none;
+      cursor: not-allowed;
+    }
+
+    .btn-danger {
+      background: linear-gradient(125deg, #8b1d34, var(--danger));
+    }
+
+    .preview {
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      display: none;
+      margin-top: 6px;
+      margin-bottom: 10px;
+      max-height: 270px;
+      object-fit: cover;
+    }
+
+    .result {
+      min-height: 72px;
+      border-radius: 12px;
+      background: rgba(17, 121, 94, 0.1);
+      color: #084f3e;
+      padding: 10px 12px;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 7px 12px;
+      background: rgba(17, 121, 94, 0.12);
+      color: var(--ok);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+      border: 1px solid rgba(17, 121, 94, 0.2);
+    }
+
+    .status-pill.failed {
+      background: rgba(180, 35, 45, 0.1);
+      color: var(--danger);
+      border-color: rgba(180, 35, 45, 0.25);
+    }
+
+    .bars {
+      display: grid;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 120px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .bar-track {
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(12, 68, 95, 0.14);
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(120deg, #0c607d, #5fb3bb);
+      transition: width 0.5s ease;
+    }
+
+    .small {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 1050px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 12px;
+      }
+
+      .hero {
+        padding: 20px;
+      }
+
+      .card h2 {
+        font-size: 21px;
+      }
+
+      .bar-row {
+        grid-template-columns: 88px 1fr auto;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="shell">
-    <section class="card hero">
-      <h1>CardioVision</h1>
-      <p>Vercel frontend connected to your Render Docker backend.</p>
-      <p class="mini">Set your backend URL below once and it will be saved in your browser.</p>
+  <main class="app">
+    <section class="hero">
+      <h1 class="hero-title">CardioVision Clinical Intelligence</h1>
+      <p class="hero-sub">A medical-grade one-page interface for X-ray screening, retraining intake, and model monitoring. Backend is connected for all users by default.</p>
+      <div class="hero-meta">Live API: cardiovision-api-2lza.onrender.com</div>
     </section>
 
-    <section class="card">
-      <label class="label" for="apiBase">Render Backend URL</label>
-      <input id="apiBase" type="url" placeholder="https://your-render-service.onrender.com">
-      <button id="saveBase">Save Backend URL</button>
-      <div id="saveMessage" class="mini"></div>
-    </section>
-
-    <section class="grid">
-      <article class="card">
-        <div class="label">Health</div>
-        <div class="value" id="healthValue">Checking...</div>
-        <div class="mini" id="healthMeta"></div>
+    <section class="overview">
+      <article class="metric">
+        <div class="metric-label">System Health</div>
+        <div class="metric-value" id="healthValue">Checking...</div>
       </article>
-
-      <article class="card">
-        <div class="label">Prediction</div>
-        <input type="file" id="predictFile" accept="image/*">
-        <button id="predictBtn">Run Prediction</button>
-        <div class="prediction" id="predictionResult">No prediction yet.</div>
+      <article class="metric">
+        <div class="metric-label">API Uptime</div>
+        <div class="metric-value" id="uptimeValue">-</div>
+      </article>
+      <article class="metric">
+        <div class="metric-label">Predictions</div>
+        <div class="metric-value" id="predCount">0</div>
+      </article>
+      <article class="metric">
+        <div class="metric-label">Avg Latency</div>
+        <div class="metric-value" id="latencyValue">0 ms</div>
       </article>
     </section>
-  </div>
+
+    <section class="layout">
+      <div class="stack">
+        <article class="card">
+          <h2>X-ray Prediction</h2>
+          <p class="sub">Upload one chest image to run model inference and confidence scoring.</p>
+          <input type="file" id="predictFile" accept="image/*">
+          <button id="predictBtn">Run Clinical Prediction</button>
+          <img id="predictPreview" class="preview" alt="Uploaded X-ray preview">
+          <div id="predictionResult" class="result">No prediction yet.</div>
+        </article>
+
+        <article class="card">
+          <h2>Retraining Intake</h2>
+          <p class="sub">Upload new labeled images to improve model quality in future retraining cycles.</p>
+          <select id="classLabel">
+            <option value="NORMAL">NORMAL</option>
+            <option value="PNEUMONIA">PNEUMONIA</option>
+          </select>
+          <input type="file" id="retrainFiles" accept="image/*" multiple>
+          <button id="uploadBtn">Upload New Dataset Images</button>
+          <div class="small" id="uploadMessage">No upload yet.</div>
+        </article>
+      </div>
+
+      <div class="stack">
+        <article class="card">
+          <h2>Model Retraining Control</h2>
+          <p class="sub">Launch a retraining run with selected epochs and monitor current status.</p>
+          <input type="number" id="epochsInput" min="1" max="20" value="3">
+          <button class="btn-danger" id="retrainBtn">Trigger Retraining</button>
+          <div id="statusPill" class="status-pill">idle</div>
+          <div class="small" id="retrainMessage">No retrain started yet.</div>
+        </article>
+
+        <article class="card">
+          <h2>Dataset Distribution</h2>
+          <p class="sub">Training volume by class and class balance indicator.</p>
+          <div id="bars" class="bars"></div>
+          <div id="datasetMeta" class="small">Loading dataset metrics...</div>
+        </article>
+      </div>
+    </section>
+  </main>
 
   <script>
-    const storageKey = "cardiovision_api_base";
-
-    function getBase() {
-      return (localStorage.getItem(storageKey) || "").replace(/\/$/, "");
-    }
-
-    function setBase(value) {
-      localStorage.setItem(storageKey, value.replace(/\/$/, ""));
-    }
+    const API_BASE = "https://cardiovision-api-2lza.onrender.com";
 
     function apiUrl(path) {
-      const base = getBase();
-      if (!base) {
-        throw new Error("Set your Render backend URL first.");
-      }
-      return `${base}${path}`;
+      return `${API_BASE}${path}`;
+    }
+
+    function formatDuration(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      return `${h}h ${m}m ${s}s`;
     }
 
     async function fetchJson(path, options) {
@@ -132,68 +392,137 @@
       return data;
     }
 
-    async function refreshHealth() {
-      const value = document.getElementById("healthValue");
-      const meta = document.getElementById("healthMeta");
+    async function refreshOverview() {
       try {
-        const data = await fetchJson("/health");
-        value.textContent = data.status || "ok";
-        meta.textContent = `Model: ${data.active_model_path || "n/a"}`;
-        meta.className = "mini";
+        const [health, metrics, retrainStatus] = await Promise.all([
+          fetchJson("/health"),
+          fetchJson("/metrics"),
+          fetchJson("/retrain-status")
+        ]);
+
+        document.getElementById("healthValue").textContent = health.status || "ok";
+        document.getElementById("uptimeValue").textContent = formatDuration(health.uptime_seconds || 0);
+        document.getElementById("predCount").textContent = metrics.total_predictions || 0;
+        document.getElementById("latencyValue").textContent = `${metrics.average_latency_ms || 0} ms`;
+
+        const pill = document.getElementById("statusPill");
+        const state = retrainStatus.state || "idle";
+        pill.textContent = state;
+        pill.className = `status-pill${state === "failed" ? " failed" : ""}`;
+        document.getElementById("retrainMessage").textContent = retrainStatus.message || "No status";
       } catch (error) {
-        value.textContent = "Unavailable";
-        meta.textContent = error.message;
-        meta.className = "mini error";
+        document.getElementById("healthValue").textContent = "Unavailable";
       }
     }
 
-    document.getElementById("saveBase").addEventListener("click", () => {
-      const input = document.getElementById("apiBase");
-      const message = document.getElementById("saveMessage");
-      const url = (input.value || "").trim();
-      if (!url.startsWith("https://")) {
-        message.textContent = "Please enter a valid https URL.";
-        message.className = "mini error";
-        return;
+    async function refreshDataset() {
+      try {
+        const data = await fetchJson("/visualization-data");
+        const labels = data.labels || [];
+        const counts = data.counts || [];
+        const maxValue = Math.max(1, ...counts);
+        const bars = document.getElementById("bars");
+        bars.innerHTML = "";
+
+        labels.forEach((label, i) => {
+          const value = counts[i] || 0;
+          const width = Math.round((value / maxValue) * 100);
+          const row = document.createElement("div");
+          row.className = "bar-row";
+          row.innerHTML = `
+            <span>${label}</span>
+            <div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div>
+            <strong>${value}</strong>
+          `;
+          bars.appendChild(row);
+        });
+
+        const total = counts.reduce((sum, c) => sum + c, 0);
+        const minCount = counts.length ? Math.min(...counts) : 0;
+        const maxCount = counts.length ? Math.max(...counts) : 0;
+        const ratio = maxCount === 0 ? "0.00" : (minCount / maxCount).toFixed(2);
+        document.getElementById("datasetMeta").textContent = `Total images: ${total} | Balance score (min/max): ${ratio}`;
+      } catch (error) {
+        document.getElementById("datasetMeta").textContent = "Dataset metrics unavailable right now.";
       }
-      setBase(url);
-      message.textContent = "Saved. Testing backend...";
-      message.className = "mini";
-      refreshHealth();
-    });
+    }
 
     document.getElementById("predictBtn").addEventListener("click", async () => {
       const file = document.getElementById("predictFile").files[0];
       const result = document.getElementById("predictionResult");
-
       if (!file) {
         result.textContent = "Select an image first.";
         return;
       }
 
+      const preview = document.getElementById("predictPreview");
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = "block";
+
       const formData = new FormData();
       formData.append("file", file);
-
       try {
         const data = await fetchJson("/predict", { method: "POST", body: formData });
         result.innerHTML =
           `<strong>Prediction:</strong> ${data.prediction}<br>` +
           `<strong>Confidence:</strong> ${data.confidence}<br>` +
           `<strong>Latency:</strong> ${data.latency_ms} ms`;
-        refreshHealth();
+        refreshOverview();
       } catch (error) {
         result.textContent = error.message;
       }
     });
 
-    const initialBase = getBase();
-    if (initialBase) {
-      document.getElementById("apiBase").value = initialBase;
-      refreshHealth();
-    } else {
-      document.getElementById("healthValue").textContent = "Set backend URL";
-      document.getElementById("healthMeta").textContent = "Add your Render URL and click Save Backend URL.";
+    document.getElementById("uploadBtn").addEventListener("click", async () => {
+      const files = document.getElementById("retrainFiles").files;
+      const classLabel = document.getElementById("classLabel").value;
+      const message = document.getElementById("uploadMessage");
+
+      if (!files.length) {
+        message.textContent = "Select one or more files to upload.";
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("class_label", classLabel);
+      for (let i = 0; i < files.length; i += 1) {
+        formData.append("files", files[i]);
+      }
+
+      try {
+        const data = await fetchJson("/upload-retrain-data", { method: "POST", body: formData });
+        message.textContent = `Uploaded ${data.saved_count} files to ${data.class_label}.`;
+        refreshDataset();
+      } catch (error) {
+        message.textContent = error.message;
+      }
+    });
+
+    document.getElementById("retrainBtn").addEventListener("click", async () => {
+      const button = document.getElementById("retrainBtn");
+      const epochs = parseInt(document.getElementById("epochsInput").value, 10) || 3;
+      button.disabled = true;
+      try {
+        await fetchJson("/trigger-retrain", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ epochs: epochs })
+        });
+        refreshOverview();
+      } catch (error) {
+        document.getElementById("retrainMessage").textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    async function bootstrap() {
+      await refreshOverview();
+      await refreshDataset();
     }
+
+    bootstrap();
+    setInterval(refreshOverview, 5000);
   </script>
 </body>
 </html>
