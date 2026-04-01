@@ -9,17 +9,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --ink: #261419;
-      --muted: #64525a;
-      --primary: #a2152d;
-      --primary-soft: #d32f49;
-      --danger: #7f1322;
-      --ok: #0b7a5a;
-      --surface: #fff4f5;
-      --card: #ffffff;
-      --ring: rgba(162, 21, 45, 0.22);
-      --stroke: rgba(58, 12, 22, 0.14);
-      --shadow: 0 14px 34px rgba(40, 10, 16, 0.16);
+      --ink: #eaf4ff;
+      --muted: #b7c8d8;
+      --primary: #ea364f;
+      --primary-soft: #ff6b77;
+      --danger: #ff4f64;
+      --ok: #42d7aa;
+      --ring: rgba(234, 54, 79, 0.3);
+      --stroke: rgba(255, 255, 255, 0.16);
+      --glass: rgba(7, 14, 22, 0.56);
+      --glass-strong: rgba(5, 10, 16, 0.72);
+      --shadow: 0 16px 36px rgba(0, 0, 0, 0.36);
     }
 
     * {
@@ -32,9 +32,8 @@
       font-family: "Manrope", sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(circle at 12% 12%, rgba(211, 47, 73, 0.2), transparent 28%),
-        radial-gradient(circle at 88% 20%, rgba(15, 22, 34, 0.2), transparent 30%),
-        linear-gradient(140deg, #fff3f5 0%, #fff7f8 42%, #f9ecef 100%);
+        linear-gradient(140deg, rgba(4, 7, 11, 0.78), rgba(8, 12, 19, 0.84)),
+        url("assets/Site banner.jpg") center center / cover no-repeat fixed;
       padding: 24px;
     }
 
@@ -50,12 +49,13 @@
       overflow: hidden;
       border-radius: 24px;
       padding: 26px;
-      background:
-        linear-gradient(98deg, rgba(10, 8, 10, 0.84) 0%, rgba(10, 8, 10, 0.22) 62%),
-        url("assets/heart-banner.jpg") left center / cover no-repeat;
-      color: #ecf8ff;
+      background: linear-gradient(120deg, rgba(8, 16, 25, 0.74), rgba(8, 16, 25, 0.38));
+      backdrop-filter: blur(9px) saturate(120%);
+      -webkit-backdrop-filter: blur(9px) saturate(120%);
+      color: #eef7ff;
       box-shadow: var(--shadow);
-      min-height: 300px;
+      border: 1px solid var(--stroke);
+      min-height: 260px;
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
@@ -69,7 +69,7 @@
       width: 260px;
       height: 260px;
       border-radius: 50%;
-      background: radial-gradient(circle at 40% 40%, rgba(233, 51, 78, 0.33), rgba(255, 255, 255, 0));
+      background: radial-gradient(circle at 40% 40%, rgba(234, 54, 79, 0.45), rgba(255, 255, 255, 0));
     }
 
     .hero-title {
@@ -96,8 +96,8 @@
       align-items: center;
       padding: 8px 11px;
       border-radius: 999px;
-      background: rgba(162, 21, 45, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(234, 54, 79, 0.24);
+      border: 1px solid rgba(255, 255, 255, 0.26);
       font-family: "IBM Plex Mono", monospace;
       font-size: 12px;
       position: relative;
@@ -111,11 +111,13 @@
     }
 
     .metric {
-      background: var(--card);
+      background: var(--glass);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       border: 1px solid var(--stroke);
       border-radius: 16px;
       padding: 14px;
-      box-shadow: 0 8px 20px rgba(14, 40, 61, 0.08);
+      box-shadow: var(--shadow);
     }
 
     .metric-label {
@@ -143,11 +145,13 @@
     }
 
     .card {
-      background: var(--card);
+      background: var(--glass-strong);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       border: 1px solid var(--stroke);
       border-radius: 18px;
       padding: 18px;
-      box-shadow: 0 10px 26px rgba(12, 36, 55, 0.08);
+      box-shadow: var(--shadow);
     }
 
     .card h2 {
@@ -167,12 +171,13 @@
     button {
       width: 100%;
       border-radius: 12px;
-      border: 1px solid rgba(15, 35, 52, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       padding: 11px 13px;
       font-family: inherit;
       font-size: 14px;
       margin-bottom: 10px;
-      background: #fff;
+      background: rgba(7, 16, 26, 0.72);
+      color: #edf5ff;
     }
 
     input:focus,
@@ -185,7 +190,7 @@
       font-weight: 700;
       cursor: pointer;
       color: #fff;
-      background: linear-gradient(125deg, var(--primary), #0c607d);
+      background: linear-gradient(125deg, #c92043, #ff4e64);
       transition: transform 0.16s ease, opacity 0.16s ease;
     }
 
@@ -201,7 +206,7 @@
     }
 
     .btn-danger {
-      background: linear-gradient(125deg, #8b1d34, var(--danger));
+      background: linear-gradient(125deg, #8a142a, var(--danger));
     }
 
     .preview {
@@ -218,11 +223,12 @@
     .result {
       min-height: 72px;
       border-radius: 12px;
-      background: rgba(17, 121, 94, 0.1);
-      color: #084f3e;
+      background: rgba(66, 215, 170, 0.12);
+      color: #d5fff1;
       padding: 10px 12px;
       font-size: 14px;
       line-height: 1.45;
+      border: 1px solid rgba(66, 215, 170, 0.2);
     }
 
     .status-pill {
@@ -231,17 +237,17 @@
       gap: 8px;
       border-radius: 999px;
       padding: 7px 12px;
-      background: rgba(17, 121, 94, 0.12);
+      background: rgba(66, 215, 170, 0.15);
       color: var(--ok);
       font-family: "IBM Plex Mono", monospace;
       font-size: 12px;
-      border: 1px solid rgba(17, 121, 94, 0.2);
+      border: 1px solid rgba(66, 215, 170, 0.24);
     }
 
     .status-pill.failed {
-      background: rgba(180, 35, 45, 0.1);
+      background: rgba(255, 79, 100, 0.12);
       color: var(--danger);
-      border-color: rgba(180, 35, 45, 0.25);
+      border-color: rgba(255, 79, 100, 0.28);
     }
 
     .bars {
@@ -263,14 +269,14 @@
       width: 100%;
       height: 12px;
       border-radius: 999px;
-      background: rgba(162, 21, 45, 0.12);
+      background: rgba(255, 255, 255, 0.15);
       overflow: hidden;
     }
 
     .bar-fill {
       height: 100%;
       width: 0%;
-      background: linear-gradient(120deg, #891428, #d32f49);
+      background: linear-gradient(120deg, #c92043, #ff4e64);
       transition: width 0.5s ease;
     }
 
@@ -309,7 +315,7 @@
   <main class="app">
     <section class="hero">
       <h1 class="hero-title">CardioVision Clinical Intelligence</h1>
-      <p class="hero-sub">A medical-grade one-page interface for X-ray screening, retraining intake, and model monitoring. The backend is already connected for everyone by default.</p>
+      <p class="hero-sub">One page for prediction, retraining upload, and live model monitoring. Backend connection is already configured for every user.</p>
       <div class="hero-meta">Live API: cardiovision-api-2lza.onrender.com</div>
     </section>
 
@@ -368,9 +374,9 @@
 
         <article class="card">
           <h2>Dataset Distribution</h2>
-          <p class="sub">Class distribution view for quick monitoring.</p>
+          <p class="sub">Quick class comparison for monitoring balance.</p>
           <div id="bars" class="bars"></div>
-          <div id="datasetMeta" class="small">Loading class overview...</div>
+          <div id="datasetMeta" class="small">Loading class comparison...</div>
         </article>
       </div>
     </section>
@@ -439,12 +445,12 @@
           row.innerHTML = `
             <span>${label}</span>
             <div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div>
-            <strong>${value}</strong>
+            <strong>${width}%</strong>
           `;
           bars.appendChild(row);
         });
 
-        document.getElementById("datasetMeta").textContent = "Class bars refreshed successfully.";
+        document.getElementById("datasetMeta").textContent = "Class comparison updated.";
       } catch (error) {
         document.getElementById("datasetMeta").textContent = "Dataset metrics unavailable right now.";
       }
