@@ -296,6 +296,34 @@
       color: var(--muted);
     }
 
+    .insights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin: 10px 0;
+    }
+
+    .insight-item {
+      padding: 10px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    .insight-k {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .insight-v {
+      margin-top: 4px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 18px;
+      color: var(--ink);
+    }
+
     @media (max-width: 1050px) {
       .layout {
         grid-template-columns: 1fr;
@@ -388,9 +416,23 @@
 
         <article class="card">
           <h2>Dataset Distribution</h2>
-          <p class="sub">Quick class comparison for monitoring balance.</p>
+          <p class="sub">Three interpreted dataset features for monitoring quality and readiness.</p>
+          <div class="insights-grid">
+            <div class="insight-item">
+              <div class="insight-k">Feature 1: Train Volume</div>
+              <div class="insight-v" id="insightVolume">-</div>
+            </div>
+            <div class="insight-item">
+              <div class="insight-k">Feature 2: Class Balance</div>
+              <div class="insight-v" id="insightBalance">-</div>
+            </div>
+            <div class="insight-item">
+              <div class="insight-k">Feature 3: Split Readiness</div>
+              <div class="insight-v" id="insightReadiness">-</div>
+            </div>
+          </div>
           <div id="bars" class="bars"></div>
-          <div id="datasetMeta" class="small">Loading class comparison...</div>
+          <div id="datasetMeta" class="small">Loading interpreted dataset insights...</div>
         </article>
       </div>
     </section>
@@ -444,9 +486,13 @@
 
     async function refreshDataset() {
       try {
-        const data = await fetchJson("/visualization-data");
-        const labels = data.labels || [];
-        const counts = data.counts || [];
+        const [viz, splitStatus] = await Promise.all([
+          fetchJson("/visualization-data"),
+          fetchJson("/data-status")
+        ]);
+
+        const labels = viz.labels || [];
+        const counts = viz.counts || [];
         const maxValue = Math.max(1, ...counts);
         const bars = document.getElementById("bars");
         bars.innerHTML = "";
@@ -464,9 +510,29 @@
           bars.appendChild(row);
         });
 
+        const totalTrain = counts.reduce((acc, n) => acc + n, 0);
+        const minCount = counts.length ? Math.min(...counts) : 0;
+        const maxCount = counts.length ? Math.max(...counts) : 0;
+        const balance = maxCount === 0 ? "0.00" : (minCount / maxCount).toFixed(2);
+
+        const requiredSplits = ["train", "val", "test"];
+        const readySplits = requiredSplits.filter((name) => {
+          const split = splitStatus[name];
+          if (!split || !split.exists || !split.class_counts) return false;
+          return (split.class_counts.NORMAL || 0) > 0 && (split.class_counts.PNEUMONIA || 0) > 0;
+        }).length;
+        const readiness = `${readySplits}/3`;
+
+        document.getElementById("insightVolume").textContent = `${totalTrain} images`;
+        document.getElementById("insightBalance").textContent = balance;
+        document.getElementById("insightReadiness").textContent = readiness;
+
         document.getElementById("datasetMeta").textContent = "Class comparison updated.";
       } catch (error) {
         document.getElementById("datasetMeta").textContent = "Dataset metrics unavailable right now.";
+        document.getElementById("insightVolume").textContent = "-";
+        document.getElementById("insightBalance").textContent = "-";
+        document.getElementById("insightReadiness").textContent = "-";
       }
     }
 
