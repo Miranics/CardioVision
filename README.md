@@ -1,15 +1,29 @@
 # CardioVision
 
-CardioVision is an image-based MLOps pipeline for chest X-ray classification with:
+CardioVision is an end-to-end machine learning classification project for chest X-ray images. It covers:
 
-- Single-image prediction API and web UI.
-- Uptime and inference metrics endpoints.
-- Bulk data upload for retraining.
-- Retraining trigger and status tracking.
-- Dataset visualization data for UI charts.
-- Docker packaging and Locust load testing support.
+1. Offline model development and evaluation in Jupyter.
+2. API and web UI for prediction and retraining workflows.
+3. Docker packaging and cloud deployment.
+4. Request flood simulation with Locust.
 
-## Project Structure
+## Live Links
+
+1. Frontend URL: https://frontend-mu-eight-31.vercel.app
+2. Backend URL: https://cardiovision-api-2lza.onrender.com
+3. Health check: https://cardiovision-api-2lza.onrender.com/health
+
+## Project Objective
+
+Demonstrate the full Machine Learning lifecycle for a non-tabular dataset (images), including:
+
+1. Data acquisition and preprocessing.
+2. Model training and testing.
+3. Retraining trigger and automation.
+4. Production API and UI.
+5. Monitoring and flood testing.
+
+## Repository Structure
 
 ```text
 CardioVision/
@@ -21,8 +35,14 @@ CardioVision/
 │   ├── model.py
 │   ├── prediction.py
 │   └── preprocessing.py
-├── templates/
-│   └── index.html
+├── scripts/
+│   ├── check_dataset.py
+│   ├── run_locust_headless.sh
+│   ├── smoke_test_api.sh
+│   └── train_and_report.py
+├── frontend/
+│   ├── index.html
+│   └── assets/
 ├── data/
 │   ├── train/
 │   ├── val/
@@ -31,116 +51,139 @@ CardioVision/
 ├── models/
 │   ├── cardiovision_model_v1.keras
 │   └── cardiovision_model_retrained.keras
-├── locustfile.py
+├── reports/
 ├── Dockerfile
+├── docker-compose.yml
+├── locustfile.py
 └── requirements.txt
 ```
 
-## Local Setup
+## What an Assessor Should Test First
 
-1. Create and activate a virtual environment.
+1. Open the live frontend.
+2. Upload one image and run prediction.
+3. Upload multiple images for retraining.
+4. Trigger retraining and monitor status.
+5. Check uptime and metrics are updating.
+
+## Web App Guide (Every Input Explained)
+
+### Section 1: X-ray Prediction
+
+1. Input: file picker under X-ray Prediction.
+2. Accepted input: one image file.
+3. Action button: Run Clinical Prediction.
+4. Output:
+	1. Predicted class label.
+	2. Confidence value.
+	3. Inference latency in milliseconds.
+
+### Section 2: Retraining Intake
+
+1. Input: class selector.
+	1. NORMAL
+	2. PNEUMONIA
+2. Input: multiple image upload field.
+3. Action button: Upload New Dataset Images.
+4. Behavior:
+	1. Files are stored under data/uploads per class.
+	2. Upload confirmation message appears on success.
+
+### Section 3: Model Retraining Control
+
+1. Input: epochs number field.
+2. Action button: Trigger Retraining.
+3. Output:
+	1. Current retraining state (idle, running, completed, failed).
+	2. Status message for progress or error.
+
+### Section 4: Monitoring and Insights
+
+1. System Health: backend availability status.
+2. API Uptime: running time of backend process.
+3. Predictions: cumulative inference count.
+4. Avg Latency: average inference duration.
+5. Dataset insights:
+	1. Train volume.
+	2. Class balance score.
+	3. Split readiness summary.
+
+## Local Setup (Python)
+
+1. Create and activate virtual environment:
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-2. Install dependencies.
+2. Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Run the API/UI app.
+3. Run the backend app:
 
 ```bash
 python src/app.py
 ```
 
-4. Open the app in your browser:
+4. Open local URL:
 
 ```text
 http://127.0.0.1:5000
 ```
 
-## API Endpoints
+## Docker Setup
 
-- `GET /health`
-	- Returns API health, uptime, active model path, and retrain state.
-
-- `GET /metrics`
-	- Returns total predictions, average latency, and last prediction timestamp.
-
-- `GET /visualization-data`
-	- Returns class labels and counts from `data/train` for UI visualization.
-
-- `GET /data-status`
-	- Returns dataset split existence and per-class counts for `train`, `val`, and `test`.
-
-- `POST /predict`
-	- Form-data: `file` (single image)
-	- Returns class prediction, confidence, probability, and latency.
-
-- `POST /upload-retrain-data`
-	- Form-data: `class_label` (`NORMAL` or `PNEUMONIA`), `files` (multiple images)
-	- Saves uploaded images to `data/uploads/<CLASS_LABEL>/`.
-
-- `POST /trigger-retrain`
-	- JSON: `{ "epochs": 3 }`
-	- Starts background retraining.
-
-- `GET /retrain-status`
-	- Returns current retraining status, timestamps, and latest result.
-
-## Retraining Workflow
-
-1. Upload new images with `POST /upload-retrain-data`.
-2. Trigger retraining with `POST /trigger-retrain`.
-3. Poll `GET /retrain-status` until state is `completed` or `failed`.
-4. On success, the app switches to the new retrained model path.
-
-## Run with Docker
-
-Build image:
+1. Build image:
 
 ```bash
 docker build -t cardiovision:latest .
 ```
 
-Run container:
+2. Run container:
 
 ```bash
 docker run --rm -p 5000:5000 cardiovision:latest
 ```
 
-Or with Docker Compose:
+3. Or run with Compose:
 
 ```bash
 docker compose up --build
 ```
 
-## Flood Testing with Locust
+## API Endpoints
 
-1. Set a sample image path for prediction traffic.
+1. GET /health: status, uptime, active model, retrain state.
+2. GET /metrics: prediction count, avg latency, last prediction time.
+3. GET /visualization-data: labels and counts for training visualization.
+4. GET /data-status: split existence and class counts.
+5. POST /predict: predict one uploaded image.
+6. POST /upload-retrain-data: upload multiple labeled images.
+7. POST /trigger-retrain: start retraining with epochs value.
+8. GET /retrain-status: monitor retraining state and result.
 
-```bash
-export LOCUST_SAMPLE_IMAGE="/absolute/path/to/sample_xray.jpg"
-```
+## Retraining Flow
 
-2. Start app and Locust:
+1. Upload multiple labeled images in Retraining Intake.
+2. Set epoch value in Model Retraining Control.
+3. Trigger retraining.
+4. Track state until completed.
+5. New model becomes active after successful retrain.
+
+## Flood Testing (Locust)
+
+### Option A: Locust UI
+
+1. Start backend first.
+2. Run Locust:
 
 ```bash
 locust -f locustfile.py --host=http://127.0.0.1:5000
 ```
-
-Headless run helper:
-
-```bash
-chmod +x scripts/run_locust_headless.sh
-./scripts/run_locust_headless.sh /absolute/path/to/sample_xray.jpg 50 10 3m http://127.0.0.1:5000
-```
-
-You can also omit the sample image argument and the script will auto-pick one from `data/test` or `data/val`.
 
 3. Open Locust UI:
 
@@ -148,70 +191,62 @@ You can also omit the sample image argument and the script will auto-pick one fr
 http://127.0.0.1:8089
 ```
 
-## Quick Smoke Test
+### Option B: Headless Script
 
-After running the API, execute:
+```bash
+chmod +x scripts/run_locust_headless.sh
+./scripts/run_locust_headless.sh /absolute/path/to/sample_xray.jpg 50 10 3m http://127.0.0.1:5000
+```
+
+## Utility Scripts
+
+1. Smoke test API:
 
 ```bash
 ./scripts/smoke_test_api.sh
 ```
 
-This verifies `/health`, `/metrics`, `/visualization-data`, and `/data-status`.
-
-Dataset readiness check:
+2. Dataset readiness check:
 
 ```bash
-"./venv/bin/python" scripts/check_dataset.py
+./venv/bin/python scripts/check_dataset.py
 ```
 
-This fails fast when required split/class folders are empty.
-
-## Training Report Script
-
-Run a repeatable training pass and save metrics to `reports/`:
+3. Training report generation:
 
 ```bash
-CV_TRAIN_EPOCHS=3 CV_TRAIN_LR=1e-4 "./venv/bin/python" scripts/train_and_report.py
+CV_TRAIN_EPOCHS=3 CV_TRAIN_LR=1e-4 ./venv/bin/python scripts/train_and_report.py
 ```
 
-## Deploy: Render Backend + Vercel Frontend
+## Deployment Notes
 
-### 1. Deploy backend to Render (Docker)
+### Backend on Render (Docker)
 
-This repo includes `render.yaml` configured for Docker runtime and `/health` checks.
+1. Runtime: Docker.
+2. Dockerfile path: Dockerfile.
+3. Health check path: /health.
+4. Environment variables:
+	1. PYTHONUNBUFFERED=1
+	2. CORS_ALLOWED_ORIGINS=https://frontend-mu-eight-31.vercel.app
 
-On Render:
+### Frontend on Vercel
 
-1. Create a new Web Service from this GitHub repo.
-2. Render will detect `render.yaml` automatically.
-3. After first deploy, copy your backend URL, for example:
+1. Root directory: frontend.
+2. Current frontend is already configured to use the deployed backend URL.
 
-```text
-https://cardiovision-api.onrender.com
-```
+## Notebook and Evaluation
 
-4. In Render environment variables, set:
+The notebook is complete and intentionally unchanged:
 
-```text
-CORS_ALLOWED_ORIGINS=https://your-vercel-project.vercel.app
-```
+1. File: notebook/MiracleNanenMbanaade_CardioVision.ipynb
+2. Contains preprocessing, model training, and evaluation content.
+3. Includes required model quality metrics and experimentation details.
 
-If you use a custom frontend domain, include it too as comma-separated values.
+## Submission Checklist
 
-### 2. Deploy frontend to Vercel
-
-Frontend files are in `frontend/`.
-
-On Vercel:
-
-1. Import this GitHub repo.
-2. Set Root Directory to `frontend`.
-3. Deploy.
-4. Open the Vercel app URL, paste your Render backend URL in the UI, and click **Save Backend URL**.
-
-The frontend stores your backend URL in browser local storage and calls Render API endpoints directly.
-
-## Notebook
-
-The notebook includes model experimentation, preprocessing, and evaluation metrics. This implementation keeps notebook content unchanged and implements deployment/runtime operations in `src/`.
+1. GitHub repository URL.
+2. Live frontend URL.
+3. Video demo link (YouTube).
+4. Flood test results evidence and interpretation.
+5. Notebook and model files included.
 
