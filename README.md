@@ -278,6 +278,6 @@ CV_TRAIN_EPOCHS=3 CV_TRAIN_LR=1e-4 ./venv/bin/python scripts/train_and_report.py
 
 ## Conclusion
 
-CardioVision demonstrates a complete machine learning lifecycle for medical image classification: from data preparation and model development to deployment, monitoring, and retraining. The project is ready for assessor validation through the live frontend and backend links, with clear workflows for prediction, retraining, and performance testing.
+CardioVision demonstrates a complete machine learning lifecycle for medical image classification: from data preparation and model development to deployment, monitoring, and retraining.
 
 
