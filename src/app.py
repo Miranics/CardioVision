@@ -71,6 +71,7 @@ RETRAIN_STATUS = {
 STATUS_LOCK = threading.Lock()
 APP_START_TIME = time.time()
 APP_BOOT_ID = str(uuid.uuid4())
+# Deployment note: this marker comment is intentionally harmless and used to trigger redeploys.
 
 
 def _default_upload_history():
