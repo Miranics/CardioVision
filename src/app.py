@@ -331,7 +331,8 @@ def trigger_retrain():
     payload = request.get_json(silent=True) or {}
     requested_epochs = int(payload.get("epochs", 3))
     max_ui_epochs = max(1, int(os.getenv("UI_RETRAIN_MAX_EPOCHS", "2")))
-    epochs = max(1, min(requested_epochs, max_ui_epochs))
+    hard_max_epochs = max(1, int(os.getenv("UI_RETRAIN_HARD_MAX_EPOCHS", "1")))
+    epochs = max(1, min(requested_epochs, max_ui_epochs, hard_max_epochs))
 
     with STATUS_LOCK:
         if RETRAIN_STATUS["state"] == "running":

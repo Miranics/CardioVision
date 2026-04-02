@@ -11,7 +11,7 @@ import numpy as np
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 import tensorflow as tf
 from tensorflow.keras.callbacks import Callback, EarlyStopping, ReduceLROnPlateau
-from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, MaxPooling2D
+from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
 
@@ -108,14 +108,15 @@ def build_transfer_model(input_shape=(224, 224, 3), learning_rate=1e-4):
 	tf.keras.backend.clear_session()
 	model = Sequential(
 		[
-			Conv2D(16, (3, 3), activation="relu", input_shape=input_shape),
+			Input(shape=input_shape),
+			Conv2D(8, (3, 3), activation="relu"),
 			MaxPooling2D((2, 2)),
-			Conv2D(32, (3, 3), activation="relu"),
+			Conv2D(16, (3, 3), activation="relu"),
 			MaxPooling2D((2, 2)),
-			Conv2D(64, (3, 3), activation="relu"),
+			Conv2D(24, (3, 3), activation="relu"),
 			MaxPooling2D((2, 2)),
 			Flatten(),
-			Dense(64, activation="relu"),
+			Dense(32, activation="relu"),
 			Dropout(0.3),
 			Dense(1, activation="sigmoid"),
 		]
@@ -247,7 +248,7 @@ def retrain_from_uploaded_data(
 	if progress_callback:
 		callbacks = [_TrainingProgressCallback(total_epochs=epochs, progress_callback=progress_callback)]
 
-	retrain_img_size = int(os.getenv("UI_RETRAIN_IMG_SIZE", "128"))
+	retrain_img_size = int(os.getenv("UI_RETRAIN_IMG_SIZE", "96"))
 	retrain_img_size = max(64, min(retrain_img_size, 224))
 
 	try:
