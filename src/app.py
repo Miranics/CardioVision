@@ -7,7 +7,7 @@ import time
 import uuid
 from datetime import datetime
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_file
 from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 
@@ -120,6 +120,29 @@ def _record_upload_event(class_label, saved_count, requested_count):
     UPLOAD_HISTORY["last_updated"] = event["timestamp_utc"]
     _save_upload_history()
     return event
+
+
+def _resolve_latest_artifact_path(artifact_type):
+    """Resolve latest retraining artifact path for model or report."""
+    with STATUS_LOCK:
+        last_result = RETRAIN_STATUS.get("last_result") or {}
+
+    key = "saved_model_path" if artifact_type == "model" else "report_path"
+    allowed_root = MODELS_DIR if artifact_type == "model" else REPORTS_DIR
+    artifact_path = last_result.get(key)
+
+    if not artifact_path:
+        raise FileNotFoundError("No completed retraining artifact found yet.")
+
+    resolved = os.path.abspath(artifact_path)
+    allowed_root_abs = os.path.abspath(allowed_root)
+    if not (resolved == allowed_root_abs or resolved.startswith(allowed_root_abs + os.sep)):
+        raise PermissionError("Artifact path is outside allowed directory.")
+
+    if not os.path.exists(resolved):
+        raise FileNotFoundError("Artifact file is not available on this running instance.")
+
+    return resolved
 
 
 def _update_retrain_status(**kwargs):
@@ -348,6 +371,40 @@ def retrain_status():
     """Return the latest retraining state and result payload."""
     with STATUS_LOCK:
         return jsonify(RETRAIN_STATUS)
+
+
+@app.route("/download-latest-model", methods=["GET"])
+def download_latest_model():
+    """Download latest retrained model artifact from this running instance."""
+    try:
+        path = _resolve_latest_artifact_path("model")
+    except FileNotFoundError as exc:
+        return jsonify({"error": str(exc)}), 404
+    except PermissionError as exc:
+        return jsonify({"error": str(exc)}), 403
+    return send_file(
+        path,
+        as_attachment=True,
+        download_name=os.path.basename(path),
+        mimetype="application/octet-stream",
+    )
+
+
+@app.route("/download-latest-report", methods=["GET"])
+def download_latest_report():
+    """Download latest retraining report artifact from this running instance."""
+    try:
+        path = _resolve_latest_artifact_path("report")
+    except FileNotFoundError as exc:
+        return jsonify({"error": str(exc)}), 404
+    except PermissionError as exc:
+        return jsonify({"error": str(exc)}), 403
+    return send_file(
+        path,
+        as_attachment=True,
+        download_name=os.path.basename(path),
+        mimetype="application/json",
+    )
 
 
 @app.errorhandler(413)

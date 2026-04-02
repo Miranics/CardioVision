@@ -424,6 +424,8 @@
           <button class="btn-danger" id="retrainBtn">Trigger Retraining</button>
           <div id="statusPill" class="status-pill">idle</div>
           <div class="small" id="retrainMessage">No retrain started yet.</div>
+          <button id="downloadModelBtn">Download Latest Model</button>
+          <button id="downloadReportBtn">Download Latest Report</button>
         </article>
 
         <article class="card">
@@ -722,6 +724,35 @@
         document.getElementById("retrainMessage").textContent = error.message;
       } finally {
         button.disabled = false;
+      }
+    });
+
+    async function downloadLatestArtifact(kind) {
+      const endpoint = kind === "model" ? "/download-latest-model" : "/download-latest-report";
+      const retrainStatus = await fetchJson("/retrain-status");
+      const result = retrainStatus.last_result || {};
+      if (kind === "model" && !result.saved_model_path) {
+        throw new Error("No completed retrained model found yet.");
+      }
+      if (kind === "report" && !result.report_path) {
+        throw new Error("No completed retraining report found yet.");
+      }
+      window.open(apiUrl(endpoint), "_blank", "noopener");
+    }
+
+    document.getElementById("downloadModelBtn").addEventListener("click", async () => {
+      try {
+        await downloadLatestArtifact("model");
+      } catch (error) {
+        document.getElementById("retrainMessage").textContent = error.message;
+      }
+    });
+
+    document.getElementById("downloadReportBtn").addEventListener("click", async () => {
+      try {
+        await downloadLatestArtifact("report");
+      } catch (error) {
+        document.getElementById("retrainMessage").textContent = error.message;
       }
     });
 
