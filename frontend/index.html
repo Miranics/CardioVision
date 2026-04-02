@@ -466,6 +466,37 @@
       return `${h}h ${m}m ${s}s`;
     }
 
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function renderRetrainMessage(retrainStatus) {
+      const baseMessage = escapeHtml(retrainStatus.message || "No status");
+      const result = retrainStatus.last_result || null;
+      if (!result) {
+        return baseMessage;
+      }
+
+      const modelPath = result.saved_model_path ? escapeHtml(result.saved_model_path) : "n/a";
+      const reportPath = result.report_path ? escapeHtml(result.report_path) : "n/a";
+      const epochsRan = typeof result.epochs_ran === "number" ? result.epochs_ran : "n/a";
+      const acc = result.metrics && typeof result.metrics.accuracy === "number"
+        ? result.metrics.accuracy.toFixed(4)
+        : "n/a";
+
+      return (
+        `${baseMessage}<br>` +
+        `<strong>Saved model:</strong> ${modelPath}<br>` +
+        `<strong>Report:</strong> ${reportPath}<br>` +
+        `<strong>Epochs:</strong> ${epochsRan} | <strong>Accuracy:</strong> ${acc}`
+      );
+    }
+
     async function fetchJson(path, options) {
       const response = await fetch(apiUrl(path), options || {});
       const raw = await response.text();
@@ -531,7 +562,7 @@
         const state = retrainStatus.state || "idle";
         pill.textContent = state;
         pill.className = `status-pill${state === "failed" ? " failed" : ""}`;
-        document.getElementById("retrainMessage").textContent = retrainStatus.message || "No status";
+        document.getElementById("retrainMessage").innerHTML = renderRetrainMessage(retrainStatus);
       } catch (error) {
         document.getElementById("healthValue").textContent = "Unavailable";
       }
