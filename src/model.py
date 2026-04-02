@@ -5,10 +5,10 @@ from datetime import datetime
 
 import numpy as np
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
-from tensorflow.keras.applications import MobileNetV2
+import tensorflow as tf
 from tensorflow.keras.callbacks import Callback, EarlyStopping, ReduceLROnPlateau
-from tensorflow.keras.layers import Dense, Dropout, GlobalAveragePooling2D
-from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, MaxPooling2D
+from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
 
 from preprocessing import (
@@ -43,19 +43,22 @@ def _validate_dataset_for_training(data_dir):
 
 
 def build_transfer_model(input_shape=(224, 224, 3), learning_rate=1e-4):
-	"""Build a MobileNetV2 transfer-learning classifier."""
-	base_model = MobileNetV2(
-		include_top=False,
-		weights="imagenet",
-		input_shape=input_shape,
+	"""Build a lightweight CNN classifier for low-memory runtime retraining."""
+	tf.keras.backend.clear_session()
+	model = Sequential(
+		[
+			Conv2D(16, (3, 3), activation="relu", input_shape=input_shape),
+			MaxPooling2D((2, 2)),
+			Conv2D(32, (3, 3), activation="relu"),
+			MaxPooling2D((2, 2)),
+			Conv2D(64, (3, 3), activation="relu"),
+			MaxPooling2D((2, 2)),
+			Flatten(),
+			Dense(64, activation="relu"),
+			Dropout(0.3),
+			Dense(1, activation="sigmoid"),
+		]
 	)
-	base_model.trainable = False
-
-	x = GlobalAveragePooling2D()(base_model.output)
-	x = Dropout(0.3)(x)
-	output = Dense(1, activation="sigmoid")(x)
-
-	model = Model(inputs=base_model.input, outputs=output)
 	model.compile(
 		optimizer=Adam(learning_rate=learning_rate),
 		loss="binary_crossentropy",
@@ -162,6 +165,15 @@ def retrain_from_uploaded_data(
 		raise ValueError("No uploaded files found to retrain with.")
 	if progress_callback:
 		progress_callback(f"Merged {copied_files} uploaded files into the train split.")
+
+	status = dataset_split_status(base_data_dir)
+	train_counts = status.get("train", {}).get("class_counts", {})
+	if progress_callback:
+		progress_callback(
+			"Training uses the full current train split: "
+			f"NORMAL={train_counts.get('NORMAL', 0)}, "
+			f"PNEUMONIA={train_counts.get('PNEUMONIA', 0)}."
+		)
 
 	timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
 	output_path = os.path.join(models_dir, f"cardiovision_model_retrained_{timestamp}.keras")
