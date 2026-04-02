@@ -411,6 +411,8 @@
           <input type="file" id="retrainFiles" accept="image/*" multiple>
           <button id="uploadBtn">Upload New Dataset Images</button>
           <div class="small" id="uploadMessage">No upload yet.</div>
+          <div class="small" id="uploadTotals">Total uploaded: NORMAL 0 | PNEUMONIA 0</div>
+          <div class="small" id="uploadHistory">Recent uploads: none.</div>
         </article>
       </div>
 
@@ -471,6 +473,34 @@
         throw new Error(data.error || data.message || "Request failed");
       }
       return data;
+    }
+
+    function uploadWithProgress(path, formData, onProgress) {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", apiUrl(path));
+        xhr.upload.onprogress = (event) => {
+          if (!event.lengthComputable || !onProgress) return;
+          const percentage = Math.round((event.loaded / event.total) * 100);
+          onProgress(percentage);
+        };
+        xhr.onload = () => {
+          let data = {};
+          try {
+            data = JSON.parse(xhr.responseText || "{}");
+          } catch (error) {
+            reject(new Error("Invalid upload response."));
+            return;
+          }
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(data);
+            return;
+          }
+          reject(new Error(data.error || data.message || "Upload failed"));
+        };
+        xhr.onerror = () => reject(new Error("Upload request failed."));
+        xhr.send(formData);
+      });
     }
 
     async function refreshOverview() {
@@ -548,6 +578,31 @@
       }
     }
 
+    async function refreshUploadHistory() {
+      try {
+        const data = await fetchJson("/upload-history");
+        const totals = data.totals || {};
+        const normal = totals.NORMAL || 0;
+        const pneumonia = totals.PNEUMONIA || 0;
+        document.getElementById("uploadTotals").textContent =
+          `Total uploaded: NORMAL ${normal} | PNEUMONIA ${pneumonia}`;
+
+        const events = data.recent_events || [];
+        if (!events.length) {
+          document.getElementById("uploadHistory").textContent = "Recent uploads: none.";
+          return;
+        }
+
+        const summary = events
+          .slice(-3)
+          .map((event) => `${event.saved_count} to ${event.class_label}`)
+          .join(" | ");
+        document.getElementById("uploadHistory").textContent = `Recent uploads: ${summary}`;
+      } catch (error) {
+        document.getElementById("uploadHistory").textContent = "Recent uploads unavailable.";
+      }
+    }
+
     document.getElementById("predictBtn").addEventListener("click", async () => {
       const file = document.getElementById("predictFile").files[0];
       const result = document.getElementById("predictionResult");
@@ -591,9 +646,16 @@
       }
 
       try {
-        const data = await fetchJson("/upload-retrain-data", { method: "POST", body: formData });
-        message.textContent = `Upload complete for class ${data.class_label}.`;
+        message.textContent = `Uploading ${files.length} files to ${classLabel}: 0%`;
+        const data = await uploadWithProgress("/upload-retrain-data", formData, (percent) => {
+          message.textContent = `Uploading ${files.length} files to ${classLabel}: ${percent}%`;
+        });
+        const totals = data.upload_totals || {};
+        message.textContent =
+          `Uploaded ${data.saved_count}/${data.requested_count} to ${data.class_label}. ` +
+          `Totals: NORMAL ${totals.NORMAL || 0}, PNEUMONIA ${totals.PNEUMONIA || 0}.`;
         refreshDataset();
+        refreshUploadHistory();
       } catch (error) {
         message.textContent = error.message;
       }
@@ -620,6 +682,7 @@
     async function bootstrap() {
       await refreshOverview();
       await refreshDataset();
+      await refreshUploadHistory();
     }
 
     bootstrap();

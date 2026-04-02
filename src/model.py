@@ -6,7 +6,7 @@ from datetime import datetime
 import numpy as np
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from tensorflow.keras.applications import MobileNetV2
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras.callbacks import Callback, EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.layers import Dense, Dropout, GlobalAveragePooling2D
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
@@ -79,7 +79,14 @@ def evaluate_binary_model(model, test_generator):
 	}
 
 
-def train_model(data_dir, model_output_path, epochs=5, learning_rate=1e-4, batch_size=32):
+def train_model(
+	data_dir,
+	model_output_path,
+	epochs=5,
+	learning_rate=1e-4,
+	batch_size=32,
+	callbacks=None,
+):
 	"""Train, evaluate, and save a classification model."""
 	_validate_dataset_for_training(data_dir)
 	train_gen, val_gen, test_gen = build_data_generators(
@@ -92,16 +99,17 @@ def train_model(data_dir, model_output_path, epochs=5, learning_rate=1e-4, batch
 		input_shape=(IMG_SIZE[0], IMG_SIZE[1], 3),
 		learning_rate=learning_rate,
 	)
-	callbacks = [
+	default_callbacks = [
 		EarlyStopping(monitor="val_loss", patience=3, restore_best_weights=True),
 		ReduceLROnPlateau(monitor="val_loss", factor=0.5, patience=2),
 	]
+	all_callbacks = default_callbacks + list(callbacks or [])
 
 	history = model.fit(
 		train_gen,
 		validation_data=val_gen,
 		epochs=epochs,
-		callbacks=callbacks,
+		callbacks=all_callbacks,
 		verbose=1,
 	)
 
@@ -116,6 +124,26 @@ def train_model(data_dir, model_output_path, epochs=5, learning_rate=1e-4, batch
 	}
 
 
+class _TrainingProgressCallback(Callback):
+	"""Push epoch-level status messages back to caller."""
+
+	def __init__(self, total_epochs, progress_callback):
+		super().__init__()
+		self.total_epochs = max(1, int(total_epochs))
+		self.progress_callback = progress_callback
+
+	def on_epoch_end(self, epoch, logs=None):
+		if not self.progress_callback:
+			return
+		loss = None if logs is None else logs.get("loss")
+		val_loss = None if logs is None else logs.get("val_loss")
+		loss_txt = "?" if loss is None else f"{float(loss):.4f}"
+		val_loss_txt = "?" if val_loss is None else f"{float(val_loss):.4f}"
+		self.progress_callback(
+			f"Epoch {epoch + 1}/{self.total_epochs} completed (loss={loss_txt}, val_loss={val_loss_txt})."
+		)
+
+
 def retrain_from_uploaded_data(
 	base_data_dir,
 	uploads_dir,
@@ -123,15 +151,27 @@ def retrain_from_uploaded_data(
 	epochs=3,
 	learning_rate=1e-4,
 	batch_size=8,
+	progress_callback=None,
 ):
 	"""Merge uploaded files into train set, retrain model, and return run summary."""
+	if progress_callback:
+		progress_callback("Preparing uploaded files for retraining.")
 	train_dir = os.path.join(base_data_dir, "train")
 	copied_files = merge_uploads_into_training_data(uploads_dir, train_dir)
 	if copied_files == 0:
 		raise ValueError("No uploaded files found to retrain with.")
+	if progress_callback:
+		progress_callback(f"Merged {copied_files} uploaded files into the train split.")
 
 	timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
 	output_path = os.path.join(models_dir, f"cardiovision_model_retrained_{timestamp}.keras")
+
+	if progress_callback:
+		progress_callback("Starting model training. This can be memory-intensive on small instances.")
+
+	callbacks = None
+	if progress_callback:
+		callbacks = [_TrainingProgressCallback(total_epochs=epochs, progress_callback=progress_callback)]
 
 	training_result = train_model(
 		data_dir=base_data_dir,
@@ -139,6 +179,9 @@ def retrain_from_uploaded_data(
 		epochs=epochs,
 		learning_rate=learning_rate,
 		batch_size=batch_size,
+		callbacks=callbacks,
 	)
+	if progress_callback:
+		progress_callback(f"Training completed. Saved model to {output_path}.")
 	training_result["copied_training_files"] = copied_files
 	return training_result

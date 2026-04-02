@@ -4,6 +4,7 @@ import os
 import json
 import threading
 import time
+import uuid
 from datetime import datetime
 
 from flask import Flask, jsonify, render_template, request
@@ -27,6 +28,7 @@ MODELS_DIR = os.path.join(ROOT_DIR, "models")
 REPORTS_DIR = os.path.join(ROOT_DIR, "reports")
 MODEL_V1 = os.path.join(MODELS_DIR, "cardiovision_model_v1.keras")
 MODEL_RETRAINED = os.path.join(MODELS_DIR, "cardiovision_model_retrained.keras")
+UPLOAD_HISTORY_PATH = os.path.join(REPORTS_DIR, "upload_history.json")
 
 ACTIVE_MODEL_PATH = MODEL_RETRAINED if os.path.exists(MODEL_RETRAINED) else MODEL_V1
 if not os.path.exists(ACTIVE_MODEL_PATH):
@@ -67,6 +69,56 @@ RETRAIN_STATUS = {
 
 STATUS_LOCK = threading.Lock()
 APP_START_TIME = time.time()
+APP_BOOT_ID = str(uuid.uuid4())
+
+
+def _default_upload_history():
+    return {
+        "totals": {class_name: 0 for class_name in CLASS_NAMES},
+        "events": [],
+        "last_updated": None,
+    }
+
+
+def _load_upload_history():
+    if not os.path.exists(UPLOAD_HISTORY_PATH):
+        return _default_upload_history()
+
+    try:
+        with open(UPLOAD_HISTORY_PATH, "r", encoding="utf-8") as handle:
+            loaded = json.load(handle)
+    except Exception:
+        return _default_upload_history()
+
+    history = _default_upload_history()
+    history["totals"].update(loaded.get("totals", {}))
+    history["events"] = loaded.get("events", [])[-100:]
+    history["last_updated"] = loaded.get("last_updated")
+    return history
+
+
+UPLOAD_HISTORY = _load_upload_history()
+
+
+def _save_upload_history():
+    os.makedirs(REPORTS_DIR, exist_ok=True)
+    with open(UPLOAD_HISTORY_PATH, "w", encoding="utf-8") as handle:
+        json.dump(UPLOAD_HISTORY, handle, indent=2)
+
+
+def _record_upload_event(class_label, saved_count, requested_count):
+    event = {
+        "timestamp_utc": datetime.utcnow().isoformat(),
+        "class_label": class_label,
+        "saved_count": int(saved_count),
+        "requested_count": int(requested_count),
+    }
+    UPLOAD_HISTORY["totals"][class_label] = int(UPLOAD_HISTORY["totals"].get(class_label, 0)) + int(saved_count)
+    UPLOAD_HISTORY["events"].append(event)
+    UPLOAD_HISTORY["events"] = UPLOAD_HISTORY["events"][-100:]
+    UPLOAD_HISTORY["last_updated"] = event["timestamp_utc"]
+    _save_upload_history()
+    return event
 
 
 def _update_retrain_status(**kwargs):
@@ -107,12 +159,16 @@ def _retrain_worker(epochs):
     try:
         from model import retrain_from_uploaded_data
 
+        def _progress_update(message):
+            _update_retrain_status(message=message)
+
         result = retrain_from_uploaded_data(
             base_data_dir=DATA_DIR,
             uploads_dir=UPLOADS_DIR,
             models_dir=MODELS_DIR,
             epochs=epochs,
             batch_size=max(4, int(os.getenv("UI_RETRAIN_BATCH_SIZE", "8"))),
+            progress_callback=_progress_update,
         )
 
         report_path = _write_retrain_report(result=result, epochs=epochs)
@@ -130,7 +186,7 @@ def _retrain_worker(epochs):
         _update_retrain_status(
             state="failed",
             finished_at=datetime.utcnow().isoformat(),
-            message=str(exc),
+            message=f"Retraining failed: {exc}",
         )
 
 
@@ -151,6 +207,7 @@ def health():
         {
             "status": "ok",
             "uptime_seconds": uptime_seconds,
+            "boot_id": APP_BOOT_ID,
             "active_model_path": ACTIVE_MODEL_PATH,
             "retrain_state": retrain_state,
         }
@@ -235,6 +292,11 @@ def upload_retrain_data():
 
     try:
         saved = save_uploaded_files(files, class_label=class_label, uploads_dir=UPLOADS_DIR)
+        event = _record_upload_event(
+            class_label=class_label,
+            saved_count=len(saved),
+            requested_count=len(files),
+        )
     except Exception as exc:
         return jsonify({"error": str(exc)}), 400
 
@@ -243,6 +305,21 @@ def upload_retrain_data():
             "message": "Files uploaded successfully.",
             "class_label": class_label,
             "saved_count": len(saved),
+            "requested_count": len(files),
+            "upload_totals": UPLOAD_HISTORY["totals"],
+            "event": event,
+        }
+    )
+
+
+@app.route("/upload-history", methods=["GET"])
+def upload_history():
+    """Return cumulative upload totals and recent upload events."""
+    return jsonify(
+        {
+            "totals": UPLOAD_HISTORY["totals"],
+            "last_updated": UPLOAD_HISTORY["last_updated"],
+            "recent_events": UPLOAD_HISTORY["events"][-10:],
         }
     )
 
