@@ -1,7 +1,11 @@
 """Model training and retraining utilities for CardioVision."""
 
 import os
+import random
+import shutil
+import tempfile
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
@@ -16,8 +20,65 @@ from preprocessing import (
 	IMG_SIZE,
 	build_data_generators,
 	dataset_split_status,
-	merge_uploads_into_training_data,
 )
+
+
+def _build_temporary_split_from_uploads(uploads_dir):
+	"""Create temporary train/val/test folders from uploaded class images only."""
+	uploads_path = Path(uploads_dir)
+	if not uploads_path.exists():
+		raise ValueError("Uploads directory does not exist.")
+
+	temp_root = Path(tempfile.mkdtemp(prefix="cv_upload_retrain_"))
+	for split in ["train", "val", "test"]:
+		for class_name in CLASS_NAMES:
+			(temp_root / split / class_name).mkdir(parents=True, exist_ok=True)
+
+	allowed_ext = {".png", ".jpg", ".jpeg", ".bmp", ".webp"}
+	total_copied = 0
+
+	for class_name in CLASS_NAMES:
+		class_dir = uploads_path / class_name
+		if not class_dir.exists():
+			continue
+
+		files = [
+			path
+			for path in class_dir.iterdir()
+			if path.is_file() and path.suffix.lower() in allowed_ext
+		]
+		random.shuffle(files)
+
+		if len(files) < 3:
+			raise ValueError(
+				f"Need at least 3 uploaded images for class {class_name} (got {len(files)})."
+			)
+
+		val_count = max(1, int(round(len(files) * 0.2)))
+		test_count = max(1, int(round(len(files) * 0.2)))
+		train_count = len(files) - val_count - test_count
+		if train_count < 1:
+			train_count = 1
+			test_count = max(1, len(files) - val_count - train_count)
+
+		train_files = files[:train_count]
+		val_files = files[train_count:train_count + val_count]
+		test_files = files[train_count + val_count:]
+
+		if not test_files:
+			test_files = val_files[-1:]
+
+		for group_name, group_files in [
+			("train", train_files),
+			("val", val_files),
+			("test", test_files),
+		]:
+			for file_path in group_files:
+				dest = temp_root / group_name / class_name / file_path.name
+				shutil.copy2(file_path, dest)
+				total_copied += 1
+
+	return str(temp_root), total_copied
 
 
 def _validate_dataset_for_training(data_dir):
@@ -89,17 +150,18 @@ def train_model(
 	learning_rate=1e-4,
 	batch_size=32,
 	callbacks=None,
+	img_size=IMG_SIZE,
 ):
 	"""Train, evaluate, and save a classification model."""
 	_validate_dataset_for_training(data_dir)
 	train_gen, val_gen, test_gen = build_data_generators(
 		data_dir,
-		img_size=IMG_SIZE,
+		img_size=img_size,
 		batch_size=batch_size,
 	)
 
 	model = build_transfer_model(
-		input_shape=(IMG_SIZE[0], IMG_SIZE[1], 3),
+		input_shape=(img_size[0], img_size[1], 3),
 		learning_rate=learning_rate,
 	)
 	default_callbacks = [
@@ -156,21 +218,21 @@ def retrain_from_uploaded_data(
 	batch_size=8,
 	progress_callback=None,
 ):
-	"""Merge uploaded files into train set, retrain model, and return run summary."""
+	"""Retrain model using uploaded images and return run summary."""
 	if progress_callback:
-		progress_callback("Preparing uploaded files for retraining.")
-	train_dir = os.path.join(base_data_dir, "train")
-	copied_files = merge_uploads_into_training_data(uploads_dir, train_dir)
-	if copied_files == 0:
+		progress_callback("Preparing uploaded files for retraining (uploads-only mode).")
+
+	temp_data_dir, copied_files = _build_temporary_split_from_uploads(uploads_dir)
+	if copied_files <= 0:
 		raise ValueError("No uploaded files found to retrain with.")
 	if progress_callback:
-		progress_callback(f"Merged {copied_files} uploaded files into the train split.")
+		progress_callback(f"Prepared temporary split from {copied_files} uploaded files.")
 
-	status = dataset_split_status(base_data_dir)
+	status = dataset_split_status(temp_data_dir)
 	train_counts = status.get("train", {}).get("class_counts", {})
 	if progress_callback:
 		progress_callback(
-			"Training uses the full current train split: "
+			"Training now uses uploaded data split only: "
 			f"NORMAL={train_counts.get('NORMAL', 0)}, "
 			f"PNEUMONIA={train_counts.get('PNEUMONIA', 0)}."
 		)
@@ -185,14 +247,21 @@ def retrain_from_uploaded_data(
 	if progress_callback:
 		callbacks = [_TrainingProgressCallback(total_epochs=epochs, progress_callback=progress_callback)]
 
-	training_result = train_model(
-		data_dir=base_data_dir,
-		model_output_path=output_path,
-		epochs=epochs,
-		learning_rate=learning_rate,
-		batch_size=batch_size,
-		callbacks=callbacks,
-	)
+	retrain_img_size = int(os.getenv("UI_RETRAIN_IMG_SIZE", "128"))
+	retrain_img_size = max(64, min(retrain_img_size, 224))
+
+	try:
+		training_result = train_model(
+			data_dir=temp_data_dir,
+			model_output_path=output_path,
+			epochs=epochs,
+			learning_rate=learning_rate,
+			batch_size=batch_size,
+			callbacks=callbacks,
+			img_size=(retrain_img_size, retrain_img_size),
+		)
+	finally:
+		shutil.rmtree(temp_data_dir, ignore_errors=True)
 	if progress_callback:
 		progress_callback(f"Training completed. Saved model to {output_path}.")
 	training_result["copied_training_files"] = copied_files
