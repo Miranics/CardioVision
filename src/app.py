@@ -40,6 +40,9 @@ app = Flask(
     __name__,
     template_folder=os.path.join(ROOT_DIR, "templates"),
 )
+app.config["MAX_CONTENT_LENGTH"] = int(
+    os.getenv("MAX_CONTENT_LENGTH_MB", "8")
+) * 1024 * 1024
 
 cors_allowed_origins = os.getenv("CORS_ALLOWED_ORIGINS", "*").strip()
 if cors_allowed_origins == "*":
