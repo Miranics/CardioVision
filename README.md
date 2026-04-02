@@ -1,5 +1,5 @@
 # CardioVision
-
+Cardiovascular diseases are a leading cause of death worldwide. Early detection is crucial for better outcomes. This project uses deep learning to classify chest X-ray images as Normal or Abnormal, aiming to detect potential cardiovascular risks.
 CardioVision is an end-to-end machine learning classification project for chest X-ray images. It covers:
 
 1. Offline model development and evaluation in Jupyter.
