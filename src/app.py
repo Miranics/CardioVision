@@ -9,6 +9,7 @@ from datetime import datetime
 
 from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
+from werkzeug.exceptions import HTTPException
 
 from prediction import predict_from_uploaded_file, set_model_path
 from preprocessing import (
@@ -346,6 +347,20 @@ def retrain_status():
     """Return the latest retraining state and result payload."""
     with STATUS_LOCK:
         return jsonify(RETRAIN_STATUS)
+
+
+@app.errorhandler(413)
+def handle_payload_too_large(_error):
+    """Return a JSON response when uploads exceed MAX_CONTENT_LENGTH."""
+    max_mb = int(os.getenv("MAX_CONTENT_LENGTH_MB", "8"))
+    return jsonify({"error": f"Upload too large. Maximum allowed request size is {max_mb} MB."}), 413
+
+
+@app.errorhandler(HTTPException)
+def handle_http_exception(error):
+    """Ensure API clients receive JSON for HTTP errors raised by Flask/Werkzeug."""
+    description = error.description if getattr(error, "description", None) else "Request failed."
+    return jsonify({"error": str(description)}), error.code
 
 
 if __name__ == "__main__":

@@ -349,7 +349,18 @@
     <script>
         async function fetchJson(url, options) {
             const response = await fetch(url, options || {});
-            const data = await response.json();
+            const raw = await response.text();
+            let data = {};
+            if (raw) {
+                try {
+                    data = JSON.parse(raw);
+                } catch (error) {
+                    if (!response.ok) {
+                        throw new Error(`Server returned non-JSON error (${response.status}).`);
+                    }
+                    throw new Error("Server returned an unexpected response format.");
+                }
+            }
             if (!response.ok) {
                 throw new Error(data.error || data.message || "Request failed");
             }
@@ -513,6 +524,7 @@
             const files = document.getElementById("retrainFiles").files;
             const classLabel = document.getElementById("classLabel").value;
             const message = document.getElementById("uploadMessage");
+            const uploadBtn = document.getElementById("uploadBtn");
 
             if (!files.length) {
                 message.textContent = "Select one or more files to upload.";
@@ -525,6 +537,7 @@
                 formData.append("files", files[i]);
             }
 
+            uploadBtn.disabled = true;
             try {
                 message.textContent = `Uploading ${files.length} files to ${classLabel}: 0%`;
                 const data = await uploadWithProgress("/upload-retrain-data", formData, (percent) => {
@@ -538,6 +551,8 @@
                 refreshUploadHistory();
             } catch (error) {
                 message.textContent = error.message;
+            } finally {
+                uploadBtn.disabled = false;
             }
         });
 
