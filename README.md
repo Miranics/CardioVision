@@ -1,4 +1,9 @@
 # CardioVision
+
+## Project Demo Video (Watch First)
+
+https://youtu.be/raBeCyfqjfU?si=9E_pcpx0SoUOR7EP
+
 Cardiovascular diseases are a leading cause of death worldwide. Early detection is crucial for better outcomes. This project uses deep learning to classify chest X-ray images as Normal or Abnormal, aiming to detect potential cardiovascular risks.
 CardioVision is an end-to-end machine learning classification project for chest X-ray images. It covers:
 
@@ -12,6 +17,7 @@ CardioVision is an end-to-end machine learning classification project for chest 
 1. Frontend URL: https://frontend-mu-eight-31.vercel.app
 2. Backend URL: https://cardiovision-api-2lza.onrender.com
 3. Health check: https://cardiovision-api-2lza.onrender.com/health
+4. Demo video: https://youtu.be/raBeCyfqjfU?si=9E_pcpx0SoUOR7EP
 
 ## Project Objective
 
@@ -272,5 +278,9 @@ CV_TRAIN_EPOCHS=3 CV_TRAIN_LR=1e-4 ./venv/bin/python scripts/train_and_report.py
 1. File: notebook/MiracleNanenMbanaade_CardioVision.ipynb
 2. Contains preprocessing, model training, and evaluation content.
 3. Includes required model quality metrics and experimentation details.
+
+## Conclusion
+
+CardioVision demonstrates a complete machine learning lifecycle for medical image classification: from data preparation and model development to deployment, monitoring, and retraining. The project is ready for assessor validation through the live frontend and backend links, with clear workflows for prediction, retraining, and performance testing.
 
 
