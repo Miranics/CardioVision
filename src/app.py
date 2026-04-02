@@ -167,7 +167,7 @@ def _retrain_worker(epochs):
             uploads_dir=UPLOADS_DIR,
             models_dir=MODELS_DIR,
             epochs=epochs,
-            batch_size=max(4, int(os.getenv("UI_RETRAIN_BATCH_SIZE", "8"))),
+            batch_size=max(1, int(os.getenv("UI_RETRAIN_BATCH_SIZE", "8"))),
             progress_callback=_progress_update,
         )
 
