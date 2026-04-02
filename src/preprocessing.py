@@ -121,7 +121,7 @@ def save_uploaded_files(files, class_label, uploads_dir):
 
 
 def merge_uploads_into_training_data(uploads_dir, train_dir):
-	"""Copy uploaded retrain files into train split with unique names."""
+	"""Move uploaded retrain files into train split once with unique names."""
 	uploads_path = Path(uploads_dir)
 	train_path = Path(train_dir)
 	ensure_directory(train_path)
@@ -140,7 +140,12 @@ def merge_uploads_into_training_data(uploads_dir, train_dir):
 				continue
 
 			unique_name = f"retrain_{datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}_{file_path.name}"
-			shutil.copy2(file_path, dest_dir / unique_name)
+			shutil.move(str(file_path), str(dest_dir / unique_name))
 			copied += 1
+
+		# Keep uploads directory clean after each retrain pass.
+		for leftover in src_dir.iterdir():
+			if leftover.is_file() and leftover.suffix.lower() in ALLOWED_EXTENSIONS:
+				leftover.unlink(missing_ok=True)
 
 	return copied

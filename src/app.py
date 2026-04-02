@@ -94,8 +94,6 @@ def _write_retrain_report(result, epochs):
 def _retrain_worker(epochs):
     """Run retraining asynchronously and update active model when successful."""
     global ACTIVE_MODEL_PATH
-    from model import retrain_from_uploaded_data
-
     _update_retrain_status(
         state="running",
         started_at=datetime.utcnow().isoformat(),
@@ -104,11 +102,14 @@ def _retrain_worker(epochs):
     )
 
     try:
+        from model import retrain_from_uploaded_data
+
         result = retrain_from_uploaded_data(
             base_data_dir=DATA_DIR,
             uploads_dir=UPLOADS_DIR,
             models_dir=MODELS_DIR,
             epochs=epochs,
+            batch_size=max(4, int(os.getenv("UI_RETRAIN_BATCH_SIZE", "8"))),
         )
 
         report_path = _write_retrain_report(result=result, epochs=epochs)
@@ -247,7 +248,9 @@ def upload_retrain_data():
 def trigger_retrain():
     """Start background retraining with provided epochs."""
     payload = request.get_json(silent=True) or {}
-    epochs = int(payload.get("epochs", 3))
+    requested_epochs = int(payload.get("epochs", 3))
+    max_ui_epochs = max(1, int(os.getenv("UI_RETRAIN_MAX_EPOCHS", "2")))
+    epochs = max(1, min(requested_epochs, max_ui_epochs))
 
     with STATUS_LOCK:
         if RETRAIN_STATUS["state"] == "running":

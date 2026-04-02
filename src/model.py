@@ -79,10 +79,14 @@ def evaluate_binary_model(model, test_generator):
 	}
 
 
-def train_model(data_dir, model_output_path, epochs=5, learning_rate=1e-4):
+def train_model(data_dir, model_output_path, epochs=5, learning_rate=1e-4, batch_size=32):
 	"""Train, evaluate, and save a classification model."""
 	_validate_dataset_for_training(data_dir)
-	train_gen, val_gen, test_gen = build_data_generators(data_dir, img_size=IMG_SIZE)
+	train_gen, val_gen, test_gen = build_data_generators(
+		data_dir,
+		img_size=IMG_SIZE,
+		batch_size=batch_size,
+	)
 
 	model = build_transfer_model(
 		input_shape=(IMG_SIZE[0], IMG_SIZE[1], 3),
@@ -118,6 +122,7 @@ def retrain_from_uploaded_data(
 	models_dir,
 	epochs=3,
 	learning_rate=1e-4,
+	batch_size=8,
 ):
 	"""Merge uploaded files into train set, retrain model, and return run summary."""
 	train_dir = os.path.join(base_data_dir, "train")
@@ -133,6 +138,7 @@ def retrain_from_uploaded_data(
 		model_output_path=output_path,
 		epochs=epochs,
 		learning_rate=learning_rate,
+		batch_size=batch_size,
 	)
 	training_result["copied_training_files"] = copied_files
 	return training_result
