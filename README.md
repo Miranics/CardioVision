@@ -1,8 +1,5 @@
 # CardioVision
 
-## Project Demo Video (Watch First)
-
-https://youtu.be/raBeCyfqjfU?si=9E_pcpx0SoUOR7EP
 
 Cardiovascular diseases are a leading cause of death worldwide. Early detection is crucial for better outcomes. This project uses deep learning to classify chest X-ray images as Normal or Abnormal, aiming to detect potential cardiovascular risks.
 CardioVision is an end-to-end machine learning classification project for chest X-ray images. It covers:
@@ -13,11 +10,11 @@ CardioVision is an end-to-end machine learning classification project for chest 
 4. Request flood simulation with Locust.
 
 ## Live Links
+1. Demo video: https://youtu.be/raBeCyfqjfU?si=9E_pcpx0SoUOR7EP
+2. Frontend URL: https://frontend-mu-eight-31.vercel.app
+3. Backend URL: https://cardiovision-api-2lza.onrender.com
+4. Health check: https://cardiovision-api-2lza.onrender.com/health
 
-1. Frontend URL: https://frontend-mu-eight-31.vercel.app
-2. Backend URL: https://cardiovision-api-2lza.onrender.com
-3. Health check: https://cardiovision-api-2lza.onrender.com/health
-4. Demo video: https://youtu.be/raBeCyfqjfU?si=9E_pcpx0SoUOR7EP
 
 ## Project Objective
 
