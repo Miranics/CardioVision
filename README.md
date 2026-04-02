@@ -268,17 +268,9 @@ CV_TRAIN_EPOCHS=3 CV_TRAIN_LR=1e-4 ./venv/bin/python scripts/train_and_report.py
 
 ## Notebook and Evaluation
 
-The notebook is complete and intentionally unchanged:
 
 1. File: notebook/MiracleNanenMbanaade_CardioVision.ipynb
 2. Contains preprocessing, model training, and evaluation content.
 3. Includes required model quality metrics and experimentation details.
 
-## Submission Checklist
-
-1. GitHub repository URL.
-2. Live frontend URL.
-3. Video demo link (YouTube).
-4. Flood test results evidence and interpretation.
-5. Notebook and model files included.
 
