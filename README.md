@@ -11,7 +11,7 @@ CardioVision is an end-to-end machine learning classification project for chest 
 
 ## Live Links
 1. Demo video: https://youtu.be/raBeCyfqjfU?si=9E_pcpx0SoUOR7EP
-2. Frontend URL: https://cardiovision-api-2lza.onrender.com
+2. Frontend URL: frontend-mu-eight-31.vercel.app
 3. Backend URL: https://cardiovision-api-2lza.onrender.com
 4. Health check: https://cardiovision-api-2lza.onrender.com/health
 
